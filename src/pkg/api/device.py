@@ -47,7 +47,7 @@ class LuniiDevice:
         return self.snu.to_bytes(8, 'little')
     
     def __repr__(self):
-        repr_str =  f"Lunii device on {self.mount_point} :\n"
+        repr_str =  f"Lunii device on \"{self.mount_point}\"\n"
         repr_str += f"- firmware : v{self.fw_vers_major}.{self.fw_vers_minor}\n"
         repr_str += f"- snu      : {binascii.hexlify(self.snu_hex, ' ')}\n"
         repr_str += f"- dev key  : {binascii.hexlify(self.device_key, ' ')}\n"
@@ -94,3 +94,34 @@ def feed_stories(root_path) -> List[UUID]:
             else:
                 loop_again = False
     return story_list
+
+def find_devices(extra_path=None):
+    lunii_dev = []
+
+    # checking all drive letters
+    for drive in range(ord('A'), ord('Z')+1):
+        drv_str = f"{chr(drive)}:/"
+        lunii_path = Path(drv_str)
+        
+        if __is_device(lunii_path):
+            lunii_dev.append(lunii_path)
+
+    # checking for extra path
+    if extra_path:
+        lunii_path = Path(extra_path)
+        
+        if __is_device(lunii_path):
+            lunii_dev.append(lunii_path)
+
+    # done
+    return lunii_dev
+
+def __is_device(root_path):
+    pi_path = root_path.joinpath(".pi")
+    md_path = root_path.joinpath(".md")
+    cfg_path = root_path.joinpath(".cfg")
+    content_path = root_path.joinpath(".content")
+
+    if pi_path.is_file() and md_path.is_file() and cfg_path.is_file() and content_path.is_dir():
+        return True
+    return False

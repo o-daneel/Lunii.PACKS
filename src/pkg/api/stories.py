@@ -17,7 +17,7 @@ STORY_PACKS = {
     UUID("FB2B7DF4-BE3F-4998-83F0-BFBBDA75B9D7") : "A la poursuite des 12 joyaux ",
 }
 
-STORY_UNKNOWN = "Unknown story..."
+STORY_UNKNOWN = "Unknown story (maybe a User created story)..."
 
 def story_name(story_uuid : UUID):
     if story_uuid in STORY_PACKS:
