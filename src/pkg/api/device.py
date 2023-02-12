@@ -1,9 +1,14 @@
+import os
+import shutil
+import tempfile
+import zipfile
 import xxtea
 import binascii
 from pathlib import Path
 from uuid import UUID
 from typing import List
 from pkg.api.constants import *
+from pkg.api.stories import StoryList
 
 class LuniiDevice:
     def __init__(self, mount_point):
@@ -21,8 +26,7 @@ class LuniiDevice:
         self.__feed_device()
 
         # internal stories
-        self.stories = feed_stories(self.mount_point)
-
+        self.stories: StoryList[UUID] = feed_stories(self.mount_point)
 
     # opens the .pi file to read all installed stories
     def __feed_device(self):
@@ -54,16 +58,83 @@ class LuniiDevice:
         repr_str += f"- stories  : {len(self.stories)}x\n"
         return repr_str
 
+    def export_all(self, out_path):
+        archives = []
+        for count, story in enumerate(self.stories):
+            print(f"{count+1:>2}/{len(self.stories)} ", end="")
+            one_zip = self.export_story(str(story)[28:], out_path)
+            if one_zip:
+                archives.append(one_zip)
+        return archives
+
+    def update_pack_index(self):
+        pi_path = Path(self.mount_point).joinpath(".pi")
+        pi_path.unlink()
+        with open(pi_path, "wb") as fp:
+            st_uuid: UUID
+            for st_uuid in self.stories:
+                fp.write(st_uuid.bytes)
+        return
+
     def export_story(self, uuid, out_path):
         # is UUID part of existing stories
+        if uuid not in self.stories:
+            return None
+
+        ulist = self.stories.full_uuid(uuid)
+        if len(ulist) > 1:
+            print(f"ERROR: at least {len(ulist)} match your pattern. Try a longer UUID.")
+            for st in ulist:
+                print(f"[{st} - {self.stories.name(str(st))}]")
+            return None
+        uuid = str(ulist[0])[28:]
 
         # checking that .content dir exist
+        content_path = Path(self.mount_point).joinpath(".content")
+        if not content_path.is_dir():
+            return None
+        story_path = content_path.joinpath(uuid)
+        if not story_path.is_dir():
+            return None
+        
+        print(f"[{uuid} - {self.stories.name(uuid)}]")
 
-        # adding a dedicated file for story UUID
+        # Preparing zip file
+        zip_path = Path(out_path).joinpath(f"{uuid} - {self.stories.name(uuid)}.zip")
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            # creating zip 
+            print("> Zipping story ...")
+            temp_zip = Path(tmpdirname).joinpath("story")
+            shutil.make_archive(temp_zip, 'zip', story_path)
+            temp_zip = f"{temp_zip}.zip"
 
-        # creating zip 
+            # adding a dedicated file for story UUID
+            print("> Adding story UUID ...")
+            temp_uuid = Path(tmpdirname).joinpath("uuid.bin")
+            ulist = self.stories.full_uuid(uuid)
+            if len(ulist) > 1:
+                return None
+            full_uuid = ulist[0]
 
-        return
+            with open(temp_uuid, "wb") as fp:
+                fp.write(full_uuid.bytes)
+
+            zip = zipfile.ZipFile(temp_zip,'a')
+            zip.write(temp_uuid, os.path.basename(temp_uuid))
+            zip.close()
+
+            # removing bt file
+            print("> Removing auth file ...")
+            zin = zipfile.ZipFile (temp_zip, 'r')
+            zout = zipfile.ZipFile (zip_path, 'w')
+            for item in zin.infolist():
+                buffer = zin.read(item.filename)
+                if item.filename != 'bt':
+                    zout.writestr(item, buffer)
+            zout.close()
+            zin.close()
+
+        return zip_path
 
     def import_story(self, story_path):
         # opening zip file
@@ -78,13 +149,41 @@ class LuniiDevice:
         
         return
 
+    def remove_story(self, short_uuid):
+        if short_uuid not in self.stories:
+            print("ERROR: This story is not present on your storyteller")
+            return False
+
+        ulist = self.stories.full_uuid(short_uuid)
+        if len(ulist) > 1:
+            print(f"ERROR: at least {len(ulist)} match your pattern. Try a longer UUID.")
+        uuid = str(ulist[0])
+
+        print(f"Removing {uuid[28:]} - {self.stories.name(uuid)}...")
+        self.stories.remove(ulist[0])
+
+        # asking for confirmation
+        answer = input("Are you sure ? [y/n] ")
+        if answer.lower() not in ["y","yes"]:
+            return False
+
+        # removing story contents
+        st_path = Path(self.mount_point).joinpath(f".content/{uuid[28:]}")
+        shutil.rmtree(st_path)
+
+        # updating pack index file
+        self.update_pack_index()
+
+        return True
+
+
 # opens the .pi file to read all installed stories
-def feed_stories(root_path) -> List[UUID]:
+def feed_stories(root_path) -> StoryList[UUID]:
     
     mount_path = Path(root_path)
     pi_path = mount_path.joinpath(".pi")
 
-    story_list = []
+    story_list = StoryList()
     with open(pi_path, "rb") as fp_pi:
         loop_again = True
         while loop_again:
@@ -95,6 +194,7 @@ def feed_stories(root_path) -> List[UUID]:
                 loop_again = False
     return story_list
 
+
 def find_devices(extra_path=None):
     lunii_dev = []
 
@@ -103,20 +203,21 @@ def find_devices(extra_path=None):
         drv_str = f"{chr(drive)}:/"
         lunii_path = Path(drv_str)
         
-        if __is_device(lunii_path):
+        if is_device(lunii_path):
             lunii_dev.append(lunii_path)
 
     # checking for extra path
     if extra_path:
         lunii_path = Path(extra_path)
         
-        if __is_device(lunii_path):
+        if is_device(lunii_path):
             lunii_dev.append(lunii_path)
 
     # done
     return lunii_dev
 
-def __is_device(root_path):
+
+def is_device(root_path):
     pi_path = root_path.joinpath(".pi")
     md_path = root_path.joinpath(".md")
     cfg_path = root_path.joinpath(".cfg")
