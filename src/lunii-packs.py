@@ -6,6 +6,11 @@ from pkg.api.stories import story_name
 CLI_VERSION = "1.0.0"
 
 
+def exit_help():
+    ctx = click.get_current_context()
+    click.echo(ctx.get_help())
+    ctx.exit()
+
 @click.command()
 @click.version_option(CLI_VERSION, prog_name="Lunii Storyteller CLI application")
 @click.option('--find', '-f', "find", is_flag=True, help="Identifying all Lunii storytellers connected")
@@ -15,8 +20,12 @@ CLI_VERSION = "1.0.0"
 @click.option('--pack-export', '-pe', "exp", type=str, default=None, help="Export selected story to an archive (or use ALL)")
 @click.option('--pack-import', '-pi', "imp", type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None, help="Import a story archive in the Lunii")
 @click.option('--pack-remove', '-pr', "rem", type=str, default=None, help="Remove a story from the Lunii")
-def cli_main(find, info, dev, slist, exp, imp, rem):
+def cli_main(find, dev, info, slist, exp, imp, rem):
     valid_dev_list = find_devices()
+
+    # at least one command is required
+    if not any([find, info, slist, exp, imp, rem]):
+        exit_help()
 
     # finding connected devices
     if find:
