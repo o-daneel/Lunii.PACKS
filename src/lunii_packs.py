@@ -59,14 +59,20 @@ def cli_main(find, info, dev, list, exp, imp, rem):
             for one_zip in zip_list:
                 click.echo(f"  {one_zip}")
         else:
-            click.echo("ERROR : Failed to export")
+            click.echo("ERROR: Failed to export")
         return
     elif imp:
-        return
+        res = my_dev.import_story(imp)
+        if not res:
+            click.echo("ERROR: Failed to import")
+        else:
+            click.echo("Story imported.")
     elif rem:
         res = my_dev.remove_story(rem)
         if not res:
-            click.echo("ERROR : Failed to remove")
+            click.echo("ERROR: Failed to remove")
+        else:
+            click.echo("Story removed.")
 
     return
 

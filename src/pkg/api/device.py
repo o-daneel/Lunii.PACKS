@@ -7,10 +7,15 @@ import binascii
 from pathlib import Path
 from uuid import UUID
 from typing import List
+
+from tqdm import tqdm
+
 from pkg.api.constants import *
 from pkg.api.stories import StoryList
 
 class LuniiDevice:
+    stories: StoryList
+
     def __init__(self, mount_point):
         self.mount_point = mount_point
 
@@ -26,7 +31,7 @@ class LuniiDevice:
         self.__feed_device()
 
         # internal stories
-        self.stories: StoryList[UUID] = feed_stories(self.mount_point)
+        self.stories = feed_stories(self.mount_point)
 
     # opens the .pi file to read all installed stories
     def __feed_device(self):
@@ -44,7 +49,8 @@ class LuniiDevice:
             fp_md.seek(0x100)
             self.raw_devkey = fp_md.read(0x100)
             dec = xxtea.decrypt(self.raw_devkey, lunii_generic_key, padding=False, rounds=lunii_tea_rounds(self.raw_devkey))
-            self.device_key = dec[:16]
+            # Reordering Key components
+            self.device_key = dec[8:16] + dec[0:8]
 
     @property
     def snu_hex(self):
@@ -138,16 +144,54 @@ class LuniiDevice:
 
     def import_story(self, story_path):
         # opening zip file
+        with zipfile.ZipFile(file=story_path) as zip_file:
+            # reading all available files
+            zip_contents = zip_file.namelist()
+            if "uuid.bin" not in zip_contents:
+                print("ERROR: No UUID file found in archive. Unable to add this story.")
+                return False
 
-        # getting UUID file
+            # getting UUID file
+            new_uuid = UUID(bytes=zip_file.read("uuid.bin"))
 
-        # checking if UUID already loaded
+            # checking if UUID already loaded
+            if str(new_uuid) in self.stories:
+                print("ERROR: This story is already loaded, aborting !")
+                return False
 
-        # uncompressing contents
+            # decompressing story contents
+            output_path = Path(self.mount_point).joinpath(f".content/{str(new_uuid).upper()[28:]}")
+            if not output_path.exists():
+                output_path.mkdir(parents=True)
+
+            # Loop over each file
+            count = 0
+            pbar = tqdm(iterable=zip_contents, total=len(zip_contents), bar_format=TQDM_BAR_FORMAT)
+            for file in pbar:
+                count += 1
+                if file == "uuid.bin":
+                    continue
+                pbar.set_description(f"Processing {file}")
+
+                # Extract each file to another directory
+                # If you want to extract to current working directory, don't specify path
+                zip_file.extract(member=file, path=output_path)
+
+        # creating authorization file : bt
+        print("INFO : Authorization file creation...")
+        bt_path = output_path.joinpath("bt")
+        ri_path = output_path.joinpath("ri")
+        with open(bt_path, "wb") as fp_bt:
+            with open(ri_path, "rb") as ri_bt:
+                ri_chunk = ri_bt.read(0x40)
+                enc = xxtea.encrypt(ri_chunk, self.device_key, padding=False, rounds=lunii_tea_rounds(ri_chunk))
+                fp_bt.write(enc)
 
         # updating .pi file to add new UUID
-        
-        return
+        self.stories.append(new_uuid)
+        self.update_pack_index()
+
+        return True
 
     def remove_story(self, short_uuid):
         if short_uuid not in self.stories:
@@ -157,13 +201,14 @@ class LuniiDevice:
         ulist = self.stories.full_uuid(short_uuid)
         if len(ulist) > 1:
             print(f"ERROR: at least {len(ulist)} match your pattern. Try a longer UUID.")
+            # return False
         uuid = str(ulist[0])
 
         print(f"Removing {uuid[28:]} - {self.stories.name(uuid)}...")
         self.stories.remove(ulist[0])
 
         # asking for confirmation
-        answer = input("Are you sure ? [y/n] ")
+        answer = input("Are you sure ? [y/N] ")
         if answer.lower() not in ["y","yes"]:
             return False
 
