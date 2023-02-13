@@ -3,18 +3,19 @@ from pkg.api.device import LuniiDevice, find_devices, is_device
 from pkg.api.stories import story_name
 
 
-CLI_VERSION = "0.9.0"
+CLI_VERSION = "1.0.0"
+
 
 @click.command()
 @click.version_option(CLI_VERSION, prog_name="Lunii Storyteller CLI application")
 @click.option('--find', '-f', "find", is_flag=True, help="Identifying all Lunii storytellers connected")
 @click.option('--dev', '-d', "dev", type=click.Path(exists=True, file_okay=False, dir_okay=True), default=None, help="Specifies which drives letter to use for Lunii Storyteller")
 @click.option('--info', '-i', "info", is_flag=True, help="Prints informations about the storyteller")
-@click.option('--list', '-l', "list", is_flag=True, help="List all stories available in Lunii Storyteller")
+@click.option('--list', '-l', "slist", is_flag=True, help="List all stories available in Lunii Storyteller")
 @click.option('--pack-export', '-pe', "exp", type=str, default=None, help="Export selected story to an archive (or use ALL)")
 @click.option('--pack-import', '-pi', "imp", type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None, help="Import a story archive in the Lunii")
 @click.option('--pack-remove', '-pr', "rem", type=str, default=None, help="Remove a story from the Lunii")
-def cli_main(find, info, dev, list, exp, imp, rem):
+def cli_main(find, info, dev, slist, exp, imp, rem):
     valid_dev_list = find_devices()
 
     # finding connected devices
@@ -41,7 +42,7 @@ def cli_main(find, info, dev, list, exp, imp, rem):
     if info:
         print(my_dev)
         return
-    elif list:
+    elif slist:
         print(my_dev)
         for story in my_dev.stories:
             print(f"> {str(story).upper()[28:]} - {story_name(story)}")

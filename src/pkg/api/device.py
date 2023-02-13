@@ -1,17 +1,16 @@
 import os
 import shutil
-import tempfile
 import zipfile
 import xxtea
 import binascii
 from pathlib import Path
 from uuid import UUID
-from typing import List
 
 from tqdm import tqdm
 
 from pkg.api.constants import *
 from pkg.api.stories import StoryList
+
 
 class LuniiDevice:
     stories: StoryList
@@ -39,7 +38,6 @@ class LuniiDevice:
         mount_path = Path(self.mount_point)
         md_path = mount_path.joinpath(".md")
 
-        story_list = []
         with open(md_path, "rb") as fp_md:
             fp_md.seek(fp_md.tell() + 6)
             self.fw_vers_major = int.from_bytes(fp_md.read(2), 'little')
@@ -57,7 +55,7 @@ class LuniiDevice:
         return self.snu.to_bytes(8, 'little')
     
     def __repr__(self):
-        repr_str =  f"Lunii device on \"{self.mount_point}\"\n"
+        repr_str  = f"Lunii device on \"{self.mount_point}\"\n"
         repr_str += f"- firmware : v{self.fw_vers_major}.{self.fw_vers_minor}\n"
         repr_str += f"- snu      : {binascii.hexlify(self.snu_hex, ' ')}\n"
         repr_str += f"- dev key  : {binascii.hexlify(self.device_key, ' ')}\n"
@@ -105,40 +103,36 @@ class LuniiDevice:
         
         print(f"[{uuid} - {self.stories.name(uuid)}]")
 
+        # preparing uuid
+        ulist = self.stories.full_uuid(uuid)
+        if len(ulist) > 1:
+            return None
+        full_uuid = ulist[0]
+
         # Preparing zip file
         zip_path = Path(out_path).joinpath(f"{uuid} - {self.stories.name(uuid)}.zip")
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            # creating zip 
+        # preparing file list
+        story_flist = []
+        for root, dirnames, filenames in os.walk(story_path):
+            for filename in filenames:
+                if filename == "bt":
+                    continue
+                story_flist.append(os.path.join(root, filename))
+
+        with zipfile.ZipFile(zip_path, 'w') as zip_out:
             print("> Zipping story ...")
-            temp_zip = Path(tmpdirname).joinpath("story")
-            shutil.make_archive(temp_zip, 'zip', story_path)
-            temp_zip = f"{temp_zip}.zip"
+            pbar = tqdm(iterable=story_flist, total=len(story_flist), bar_format=TQDM_BAR_FORMAT)
+            for file in pbar:
+                target_name = Path(file).relative_to(story_path)
+                pbar.set_description(f"Processing {target_name}")
 
-            # adding a dedicated file for story UUID
-            print("> Adding story UUID ...")
-            temp_uuid = Path(tmpdirname).joinpath("uuid.bin")
-            ulist = self.stories.full_uuid(uuid)
-            if len(ulist) > 1:
-                return None
-            full_uuid = ulist[0]
+                # Extract each file to another directory
+                # If you want to extract to current working directory, don't specify path
+                zip_out.write(file, arcname=target_name)
 
-            with open(temp_uuid, "wb") as fp:
-                fp.write(full_uuid.bytes)
-
-            zip = zipfile.ZipFile(temp_zip,'a')
-            zip.write(temp_uuid, os.path.basename(temp_uuid))
-            zip.close()
-
-            # removing bt file
-            print("> Removing auth file ...")
-            zin = zipfile.ZipFile (temp_zip, 'r')
-            zout = zipfile.ZipFile (zip_path, 'w')
-            for item in zin.infolist():
-                buffer = zin.read(item.filename)
-                if item.filename != 'bt':
-                    zout.writestr(item, buffer)
-            zout.close()
-            zin.close()
+            # adding uuid file
+            print("> Adding UUID ...")
+            zip_out.writestr("uuid.bin", full_uuid.bytes)
 
         return zip_path
 
@@ -209,7 +203,7 @@ class LuniiDevice:
 
         # asking for confirmation
         answer = input("Are you sure ? [y/N] ")
-        if answer.lower() not in ["y","yes"]:
+        if answer.lower() not in ["y", "yes"]:
             return False
 
         # removing story contents
