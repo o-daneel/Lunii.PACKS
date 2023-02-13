@@ -91,7 +91,9 @@ class LuniiDevice:
             for st in ulist:
                 print(f"[{st} - {self.stories.name(str(st))}]")
             return None
-        uuid = str(ulist[0])[28:]
+
+        full_uuid = ulist[0]
+        uuid = str(full_uuid).upper()[28:]
 
         # checking that .content dir exist
         content_path = Path(self.mount_point).joinpath(".content")
@@ -102,12 +104,6 @@ class LuniiDevice:
             return None
         
         print(f"[{uuid} - {self.stories.name(uuid)}]")
-
-        # preparing uuid
-        ulist = self.stories.full_uuid(uuid)
-        if len(ulist) > 1:
-            return None
-        full_uuid = ulist[0]
 
         # Preparing zip file
         zip_path = Path(out_path).joinpath(f"{uuid} - {self.stories.name(uuid)}.zip")
@@ -257,6 +253,7 @@ def find_devices(extra_path=None):
 
 
 def is_device(root_path):
+    root_path = Path(root_path)
     pi_path = root_path.joinpath(".pi")
     md_path = root_path.joinpath(".md")
     cfg_path = root_path.joinpath(".cfg")
