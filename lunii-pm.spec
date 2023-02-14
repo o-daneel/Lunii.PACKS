@@ -4,7 +4,7 @@
 block_cipher = None
 
 
-a = Analysis(['src/lunii-packs.py'],
+a = Analysis(['src/lunii-pm.py'],
              pathex=[],
              binaries=[],
              datas=[],
@@ -26,7 +26,7 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,  
           [],
-          name='lunii-packs',
+          name='lunii-pm',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,

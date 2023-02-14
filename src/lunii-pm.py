@@ -3,7 +3,7 @@ from pkg.api.device import LuniiDevice, find_devices, is_device
 from pkg.api.stories import story_name
 
 
-CLI_VERSION = "1.0.0"
+CLI_VERSION = "1.1.0"
 
 
 def exit_help():
@@ -12,7 +12,7 @@ def exit_help():
     ctx.exit()
 
 @click.command()
-@click.version_option(CLI_VERSION, prog_name="Lunii Storyteller CLI application")
+@click.version_option(CLI_VERSION, prog_name="Lunii Storyteller - Pack Manager (CLI)")
 @click.option('--find', '-f', "find", is_flag=True, help="Identifying all Lunii storytellers connected")
 @click.option('--dev', '-d', "dev", type=click.Path(exists=True, file_okay=False, dir_okay=True), default=None, help="Specifies which drives letter to use for Lunii Storyteller")
 @click.option('--info', '-i', "info", is_flag=True, help="Prints informations about the storyteller")
