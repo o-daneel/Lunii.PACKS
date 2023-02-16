@@ -24,6 +24,8 @@ This is a simple CLI application that allows basic operations like export/import
     - [Exporting a story](#exporting-a-story)
     - [Removing a story](#removing-a-story)
     - [Importing a story](#importing-a-story)
+- [Links / Similar repos](#links--similar-repos)
+- [Story Packs](#story-packs)
 
 ## Usage - Command Line Interface
 
@@ -155,3 +157,12 @@ Processing sf/000/FC9905BB: 100%|███████████████�
 INFO : Authorization file creation...
 Story imported.
 ```
+
+# Links / Similar repos
+* [Lunii - Reverse Engineering](https://github.com/o-daneel/Lunii.RE)
+* [STUdio - Story Teller Unleashed](https://marian-m12l.github.io/studio-website/)
+* [(GitHub) STUdio, Story Teller Unleashed](https://github.com/marian-m12l/studio)
+* [Lunii Admin](https://github.com/olup/lunii-admin) (a GO implementation to create custom stories)
+# Story Packs
+You can enjoy some packs [here](packs/packs.links).   
+Feel free to share new packs.
