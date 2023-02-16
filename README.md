@@ -4,6 +4,9 @@ Lunii Pack Manager is a Proof of Concept application to demonstrate management o
 
 This is a simple CLI application that allows basic operations like export/import/remove.
 
+
+📣 **[Communauté Discord autour de Lunii](https://discord.com/invite/jg9MjHBWQC)**
+
 ## TODO
 *(nothing)*
 
@@ -162,7 +165,9 @@ Story imported.
 * [Lunii - Reverse Engineering](https://github.com/o-daneel/Lunii.RE)
 * [STUdio - Story Teller Unleashed](https://marian-m12l.github.io/studio-website/)
 * [(GitHub) STUdio, Story Teller Unleashed](https://github.com/marian-m12l/studio)
+* [Studio-Pack-Generator](https://github.com/jersou/studio-pack-generator)
 * [Lunii Admin](https://github.com/olup/lunii-admin) (a GO implementation to create custom stories)
+
 # Story Packs
 You can enjoy some packs [here](packs/packs.links).   
 Feel free to share new packs.
