@@ -15,6 +15,7 @@ STORY_PACKS = {
     UUID("BF573171-5E5D-4A50-BA89-403277175114"): "En attendant Noël",
     UUID("D56A4975-417E-4D04-AEB3-21254058B612"): "Oh les pirates !",
     UUID("FB2B7DF4-BE3F-4998-83F0-BFBBDA75B9D7"): "A la poursuite des 12 joyaux",
+    UUID("D489F67B-0E51-4669-B1E1-1555F3C18541"): "Douce Nuit",
 }
 
 STORY_UNKNOWN = "Unknown story (maybe a User created story)..."
