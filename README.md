@@ -25,10 +25,10 @@ This is a simple CLI application that allows basic operations like export/import
     - [Getting info](#getting-info)
     - [Getting installed contents](#getting-installed-contents)
     - [Exporting a story](#exporting-a-story)
+    - [Exporting ALL stories](#exporting-all-stories)
     - [Removing a story](#removing-a-story)
     - [Importing a story](#importing-a-story)
 - [Links / Similar repos](#links--similar-repos)
-- [Story Packs](#story-packs)
 
 ## Usage - Command Line Interface
 
@@ -45,6 +45,7 @@ Usage: lunii-pm.py [OPTIONS]
 
 Options:
   --version                Show the version and exit.
+  -v, --verbose            Verbose mode
   -f, --find               Identifying all Lunii storytellers connected
   -d, --dev DIRECTORY      Specifies which drives letter to use for Lunii
                            Storyteller
@@ -115,7 +116,7 @@ Lunii device on "D:\"
 
 ### Getting installed contents
 ```
-> .\lunii-pm.exe -l       
+> .\lunii-pm.exe -l
 INFO : using Lunii device on D:\
 Lunii device on "D:\"
 - firmware : v2.22
@@ -128,6 +129,27 @@ Lunii device on "D:\"
 > B4D11DC9 - Panique aux 6 Royaumes
 > FFB5D68A - Suzanne et Gaston fêtent Pâques
 ```
+
+Or using vebose mode 
+
+```
+> .\lunii-pm.exe -l -v 
+INFO : using Lunii device on D:\
+Lunii device on "D:\"
+- firmware : v2.22
+- snu      : b'00 11 22 33 44 55 66 77'
+- dev key  : b'00 11 22 33 44 55 66 77 00 11 22 33 44 55 66 77'
+- stories  : 4x
+
+UUID                                 | Name                                                         | Source
+------------------------------------ | ------------------------------------------------------------ | ------
+D56A4975-417E-4D04-AEB3-21254058B612 | Oh les pirates !                                             |
+C4139D59-872A-4D15-8CF1-76D34CDF38C6 | Suzanne et Gaston                                            |
+03933BA4-4FBF-475F-9ECC-35EFB4D11DC9 | Panique aux 6 Royaumes                                       |
+9D9521E5-84AC-4CC8-9B09-8D0AFFB5D68A | Suzanne et Gaston fêtent Pâques                              |
+```
+
+
 ### Exporting a story
 ```
 > .\lunii-pm.exe -pe FFB
@@ -141,6 +163,28 @@ Successfully exported to :
 ```
 
 **NOTE** : No need to type full ID given in list command. Just enough to avoid confusion.
+
+### Exporting ALL stories
+```
+> .\lunii-pm.exe -pe all
+INFO : using Lunii device on D:\
+ 1/3 [FFB5D68A - Suzanne et Gaston fêtent Pâques]
+> Zipping story ...
+Processing sf\000\FC9905BB: 100%|██████████████████████████████████████| 33/33 [00:00<00:00]
+> Adding UUID ...
+ 2/3 [9A2D7E89 - Au Pays des Loups]
+> Zipping story ...
+Processing sf\000\EAC43510: 100%|██████████████████████████████████████| 65/65 [00:01<00:00] 
+> Adding UUID ...
+ 3/3 [4CDF38C6 - Suzanne et Gaston]
+> Zipping story ...
+Processing sf\000\43FA0451: 100%|██████████████████████████████████████| 32/32 [00:00<00:00] 
+> Adding UUID ...
+Successfully exported to :
+  FFB5D68A - Suzanne et Gaston fêtent Pâques.zip
+  9A2D7E89 - Au Pays des Loups.zip
+  4CDF38C6 - Suzanne et Gaston.zip
+```
 
 ### Removing a story
 ```
@@ -161,13 +205,18 @@ INFO : Authorization file creation...
 Story imported.
 ```
 
+If a story already exists, import will fail
+
+```
+> .\lunii-pm.exe -pi '.\FFB5D68A - Suzanne et Gaston fêtent Pâques.zip'
+INFO : using Lunii device on D:\
+ERROR: This story is already loaded, aborting !
+ERROR: Failed to import
+```
+
 # Links / Similar repos
 * [Lunii - Reverse Engineering](https://github.com/o-daneel/Lunii.RE)
 * [STUdio - Story Teller Unleashed](https://marian-m12l.github.io/studio-website/)
 * [(GitHub) STUdio, Story Teller Unleashed](https://github.com/marian-m12l/studio)
 * [Studio-Pack-Generator](https://github.com/jersou/studio-pack-generator)
 * [Lunii Admin](https://github.com/olup/lunii-admin) (a GO implementation to create custom stories)
-
-# Story Packs
-You can enjoy some packs [here](packs/packs.links).   
-Feel free to share new packs.

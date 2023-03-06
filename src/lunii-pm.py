@@ -13,6 +13,7 @@ def exit_help():
 
 @click.command()
 @click.version_option(CLI_VERSION, prog_name="Lunii Storyteller - Pack Manager (CLI)")
+@click.option('--verbose', '-v', "verbose", is_flag=True, help="Verbose mode")
 @click.option('--find', '-f', "find", is_flag=True, help="Identifying all Lunii storytellers connected")
 @click.option('--dev', '-d', "dev", type=click.Path(exists=True, file_okay=False, dir_okay=True), default=None, help="Specifies which drives letter to use for Lunii Storyteller")
 @click.option('--info', '-i', "info", is_flag=True, help="Prints informations about the storyteller")
@@ -20,7 +21,7 @@ def exit_help():
 @click.option('--pack-export', '-pe', "exp", type=str, default=None, help="Export selected story to an archive (or use ALL)")
 @click.option('--pack-import', '-pi', "imp", type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None, help="Import a story archive in the Lunii")
 @click.option('--pack-remove', '-pr', "rem", type=str, default=None, help="Remove a story from the Lunii")
-def cli_main(find, dev, info, slist, exp, imp, rem):
+def cli_main(verbose, find, dev, info, slist, exp, imp, rem):
     valid_dev_list = find_devices()
 
     # at least one command is required
@@ -53,8 +54,14 @@ def cli_main(find, dev, info, slist, exp, imp, rem):
         return
     elif slist:
         print(my_dev)
-        for story in my_dev.stories:
-            print(f"> {str(story).upper()[28:]} - {story_name(story)}")
+        if verbose:
+            print("{:36} | {:<60} | {:6}".format("UUID", "Name", "Source"))
+            print("{} | {:<60} | {:6}".format("-"*36, "-"*60, "-"*6 ))
+            for story in my_dev.stories:
+                print("{} | {:<60} | {:6}".format(str(story).upper(), story_name(story), " "))
+        else:
+            for story in my_dev.stories:
+                print(f"> {str(story).upper()[28:]} - {story_name(story)}")
     elif exp:
         zip_list = []
         if exp.upper() == "ALL":
