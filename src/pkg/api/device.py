@@ -8,7 +8,8 @@ from uuid import UUID
 
 from tqdm import tqdm
 
-from pkg.api.constants import *
+from pkg.api.aes_keys import dev_iv, dev_key
+from pkg.api.constants import lunii_tea_rounds, lunii_generic_key, LUNII_V2, LUNII_V3, TQDM_BAR_FORMAT
 from pkg.api.stories import StoryList
 
 
@@ -19,12 +20,16 @@ class LuniiDevice:
         self.mount_point = mount_point
 
         # dummy values
+        self.lunii_version = 0
         self.UUID = ""
         self.device_key = ""
+        self.device_iv = ""
         self.snu = ""
         self.fw_vers_major = 0
         self.fw_vers_minor = 0
+        self.fw_vers_subminor = 0
         self.memory_left = 0
+        self.bt = b""
 
         # internal device details
         self.__feed_device()
@@ -39,30 +44,118 @@ class LuniiDevice:
         md_path = mount_path.joinpath(".md")
 
         with open(md_path, "rb") as fp_md:
-            fp_md.seek(fp_md.tell() + 6)
-            self.fw_vers_major = int.from_bytes(fp_md.read(2), 'little')
-            self.fw_vers_minor = int.from_bytes(fp_md.read(2), 'little')
-            self.snu = int.from_bytes(fp_md.read(8), 'little')
-            
-            fp_md.seek(0x100)
-            self.raw_devkey = fp_md.read(0x100)
-            dec = xxtea.decrypt(self.raw_devkey, lunii_generic_key, padding=False, rounds=lunii_tea_rounds(self.raw_devkey))
-            # Reordering Key components
-            self.device_key = dec[8:16] + dec[0:8]
+            md_version = int.from_bytes(fp_md.read(2), 'little')
+
+            if md_version == 6:
+                self.__v3_parse(fp_md)
+            elif md_version == 3:
+                self.__v2_parse(fp_md)
+
+    def __v2_parse(self, fp_md):
+        self.lunii_version = LUNII_V2
+        fp_md.seek(6)
+        self.fw_vers_major = int.from_bytes(fp_md.read(2), 'little')
+        self.fw_vers_minor = int.from_bytes(fp_md.read(2), 'little')
+        self.snu = fp_md.read(8)
+        
+        fp_md.seek(0x100)
+        self.raw_devkey = fp_md.read(0x100)
+        dec = xxtea.decrypt(self.raw_devkey, lunii_generic_key, padding=False, rounds=lunii_tea_rounds(self.raw_devkey))
+        # Reordering Key components
+        self.device_key = dec[8:16] + dec[0:8]
+
+
+    def __v3_parse(self, fp_md):
+        self.lunii_version = LUNII_V3
+        fp_md.seek(2)
+        # reading fw version
+        self.fw_vers_major = int.from_bytes(fp_md.read(1), 'little') - 0x30
+        fp_md.read(1)
+        self.fw_vers_minor = int.from_bytes(fp_md.read(1), 'little') - 0x30
+        fp_md.read(1)
+        self.fw_vers_subminor = int.from_bytes(fp_md.read(1), 'little') - 0x30
+        # reading SNU
+        fp_md.seek(0x1A)
+        self.snu = binascii.unhexlify(fp_md.read(14).decode('utf-8'))
+        # getting candidated for story bt file
+        fp_md.seek(0x40)
+        self.fake_bt = fp_md.read(0x20)
+        # forging keys based on md ciphered part
+        self.fake_device_key = self.snu + b"\x00\x00"
+        self.fake_device_iv = b"\x00\x00\x00\x00\x00\x00\x00\x00\x32\x33\x30\x32\x33\x30\x33\x30"
+        # real keys if available
+        self.device_key = dev_key
+        self.device_iv = dev_iv
+
+    def __v2_decipher(self, buffer, key, offset, dec_len):
+        # checking offset
+        if offset > len(buffer):
+            offset = len(buffer)
+        # checking len
+        if offset + dec_len > len(buffer):
+            dec_len = len(buffer) - offset
+        # if something to be done
+        if offset < len(buffer) and offset + dec_len <= len(buffer):
+            plain = xxtea.decrypt(buffer[offset:dec_len], key, padding=False, rounds=lunii_tea_rounds(buffer[offset:dec_len]))
+            ba_buffer = bytearray(buffer)
+            ba_buffer[offset:dec_len] = plain
+            buffer = bytes(ba_buffer)
+        return buffer
+
+    def __v3_decipher(self, buffer, key, iv, offset, len):
+        pass
+
+    def decipher(self, buffer, key, iv=None, offset=0, dec_len=512):
+        if self.lunii_version == LUNII_V2:
+            return self.__v2_decipher(buffer, key, offset, dec_len)
+        else:
+            return self.__v3_decipher(buffer, key, iv, offset, dec_len)
+
+    def __v2_cipher(self, buffer, key, offset, enc_len):
+        # checking offset
+        if offset > len(buffer):
+            offset = len(buffer)
+        # checking len
+        if offset + enc_len > len(buffer):
+            enc_len = len(buffer) - offset
+        # if something to be done
+        if offset < len(buffer) and offset + enc_len <= len(buffer):
+            ciphered = xxtea.encrypt(buffer[offset:enc_len], key, padding=False, rounds=lunii_tea_rounds(buffer[offset:enc_len]))
+            ba_buffer = bytearray(buffer)
+            ba_buffer[offset:enc_len] = ciphered
+            buffer = bytes(ba_buffer)
+        return buffer
+
+    def __v3_cipher(self, buffer, key, iv, offset, len):
+        pass
+
+    def cipher(self, buffer, key, iv=None, offset=0, enc_len=512):
+        if self.lunii_version == LUNII_V2:
+            return self.__v2_cipher(buffer, key, offset, enc_len)
+        else:
+            return self.__v3_cipher(buffer, key, iv, offset, enc_len)
 
     @property
     def snu_hex(self):
-        return self.snu.to_bytes(8, 'little')
+        return self.snu
     
     def __repr__(self):
         repr_str  = f"Lunii device on \"{self.mount_point}\"\n"
-        repr_str += f"- firmware : v{self.fw_vers_major}.{self.fw_vers_minor}\n"
+        if self.lunii_version == LUNII_V2:
+            repr_str += f"- firmware : v{self.fw_vers_major}.{self.fw_vers_minor}\n"
+        else:
+            repr_str += f"- firmware : v{self.fw_vers_major}.{self.fw_vers_minor}.{self.fw_vers_subminor}\n"
         repr_str += f"- snu      : {binascii.hexlify(self.snu_hex, ' ')}\n"
         repr_str += f"- dev key  : {binascii.hexlify(self.device_key, ' ')}\n"
+        if self.lunii_version == LUNII_V3:
+            repr_str += f"- dev iv   : {binascii.hexlify(self.device_iv, ' ')}\n"
         repr_str += f"- stories  : {len(self.stories)}x\n"
         return repr_str
 
     def export_all(self, out_path):
+        if self.lunii_version == LUNII_V3:
+            return
+        
         archives = []
         for count, story in enumerate(self.stories):
             print(f"{count+1:>2}/{len(self.stories)} ", end="")
@@ -81,6 +174,10 @@ class LuniiDevice:
         return
 
     def export_story(self, uuid, out_path):
+        # TO REMOVE SOON
+        if self.lunii_version == LUNII_V3:
+            return
+
         # is UUID part of existing stories
         if uuid not in self.stories:
             return None
@@ -106,7 +203,7 @@ class LuniiDevice:
         print(f"[{uuid} - {self.stories.name(uuid)}]")
 
         # Preparing zip file
-        zip_path = Path(out_path).joinpath(f"{uuid} - {self.stories.name(uuid)}.zip")
+        zip_path = Path(out_path).joinpath(f"{self.stories.name(uuid)}.{uuid}.plain.pk")
         # preparing file list
         story_flist = []
         for root, dirnames, filenames in os.walk(story_path):
@@ -123,8 +220,10 @@ class LuniiDevice:
                 pbar.set_description(f"Processing {target_name}")
 
                 # Extract each file to another directory
-                # If you want to extract to current working directory, don't specify path
-                zip_out.write(file, arcname=target_name)
+                # decipher if necessary (mp3 / bmp / li / ri / si)
+                data_plain = self.__get_plain_data(file)
+                file_newname = self.__get_plain_name(file, uuid)
+                zip_out.writestr(file_newname, data_plain)
 
             # adding uuid file
             print("> Adding UUID ...")
@@ -133,6 +232,10 @@ class LuniiDevice:
         return zip_path
 
     def import_story(self, story_path):
+        # TO REMOVE SOON
+        if self.lunii_version == LUNII_V3:
+            return
+        
         # opening zip file
         with zipfile.ZipFile(file=story_path) as zip_file:
             # reading all available files
@@ -165,7 +268,21 @@ class LuniiDevice:
 
                 # Extract each file to another directory
                 # If you want to extract to current working directory, don't specify path
-                zip_file.extract(member=file, path=output_path)
+                # zip_file.extract(member=file, path=output_path)
+
+                data_plain = zip_file.read(file)
+                data = self.__get_ciphered_data(file, data_plain)
+                file_newname = self.__get_ciphered_name(file)
+
+                target: Path = output_path.joinpath(file_newname)
+
+                if not target.parent.exists():
+                    target.parent.mkdir(parents=True)
+                with open(target, "wb") as f_dst:
+                    f_dst.write(data)
+
+
+        # ciphering files with keys from bt.plain
 
         # creating authorization file : bt
         print("INFO : Authorization file creation...")
@@ -191,11 +308,10 @@ class LuniiDevice:
         ulist = self.stories.full_uuid(short_uuid)
         if len(ulist) > 1:
             print(f"ERROR: at least {len(ulist)} match your pattern. Try a longer UUID.")
-            # return False
+            return False
         uuid = str(ulist[0])
 
-        print(f"Removing {uuid[28:]} - {self.stories.name(uuid)}...")
-        self.stories.remove(ulist[0])
+        print(f"Removing {uuid[28:].upper()} - {self.stories.name(uuid)}...")
 
         # asking for confirmation
         answer = input("Are you sure ? [y/N] ")
@@ -206,10 +322,69 @@ class LuniiDevice:
         st_path = Path(self.mount_point).joinpath(f".content/{uuid[28:]}")
         shutil.rmtree(st_path)
 
+        # removing story from class
+        self.stories.remove(ulist[0])
         # updating pack index file
         self.update_pack_index()
 
         return True
+
+    def __get_plain_data(self, file):
+        if not os.path.isfile(file):
+            return b""
+
+        # opening file
+        with open(file, "rb") as fsrc:
+            data = fsrc.read()
+
+        # selecting key
+        key = lunii_generic_key
+        if file.endswith("bt"):
+            key = self.device_key
+        if file.endswith("ni") or file.endswith("nm"):
+            key = None
+
+        # process file with correct key
+        if key:
+            return self.decipher(data, key)
+
+        return data
+
+    def __get_plain_name(self, file, uuid):
+        file = file.split(uuid.upper())[1]
+        while file.startswith("\\") or file.startswith("/"):
+            file = file[1:]
+
+        if "rf/" in file or "rf\\" in file:
+            return file+".bmp"
+        if "sf/" in file or "sf\\" in file:
+            return file+".mp3"
+        if file.endswith("li") or file.endswith("ri") or file.endswith("si"):
+            return file+".plain"
+
+        # untouched name
+        return file
+
+    def __get_ciphered_data(self, file, data):
+        # selecting key
+        key = lunii_generic_key
+        if file.endswith("bt"):
+            key = self.device_key
+        if file.endswith("ni") or file.endswith("nm"):
+            key = None
+
+        # process file with correct key
+        if key:
+            return self.cipher(data, key)
+
+        return data
+
+
+    def __get_ciphered_name(self, file):
+        file = file.removesuffix('.plain')
+        file = file.removesuffix('.mp3')
+        file = file.removesuffix('.bmp')
+        return file
 
 
 # opens the .pi file to read all installed stories

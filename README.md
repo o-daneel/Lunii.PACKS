@@ -9,6 +9,23 @@ This is a simple CLI application that allows basic operations like export/import
 
 ## TODO
 *(nothing)*
+* update structure with v2 v3 support
+* ~~validate cipher / decipher on v2~~
+* validate cipher / decipher on v3
+* v3 specifics
+  * read keys from bin file (optionnal)
+  * validate keys
+* ~~update all exports to .mp3 .bmp .plain (v2 only) -> .plain.pk~~
+* update import to cipher
+  * v2 : with xxxtea
+  * v3 : with aes using .md_bt
+* if v3 bin key file, allow
+  * export for v3 (if keys available), as plain ?
+  * check story
+* ADD CHECK stories
+  * for v2, check bt, parse ri si, check all files present, check bmp size, check mp3 size
+* update official db file, fetch db in homedir if not present + flag to refresh on demand
+
 
 ## Summary
 - [Lunii - Pack Manager (CLI)](#lunii---pack-manager-cli)

@@ -17,3 +17,6 @@ lunii_generic_key = vectkey_to_bytes(raw_key_generic)
 # lunii_generic_key = binascii.unhexlify(b'00112233445566770011223344556677')
 
 TQDM_BAR_FORMAT = "{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"
+
+LUNII_V2 = 2
+LUNII_V3 = 3

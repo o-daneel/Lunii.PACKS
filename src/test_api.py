@@ -1,7 +1,9 @@
 import unittest
+import hexdump
 
 from pkg.api.stories import *
 from pkg.api.device import *
+from pkg.api.constants import lunii_generic_key
 
 
 class testLunii_API(unittest.TestCase):
@@ -84,6 +86,77 @@ class testLunii_API(unittest.TestCase):
         ulist = slist.full_uuid("46")
         assert len(ulist) >= 1
 
+    def test_v2crypto(self):
+        my_dev = LuniiDevice("../test/_v2")
+
+        with open("../test/_v2/.content/4CDF38C6/bt", "rb") as bt:
+            buffer_bt = bt.read()
+        with open("../test/_v2/.content/4CDF38C6/ri", "rb") as ri:
+            buffer_ri = ri.read(0x40)
+
+        # deciphering test
+        assert len(buffer_bt) == len(buffer_ri)
+        assert buffer_bt != buffer_ri
+
+        print("bt:")
+        hexdump.hexdump(buffer_bt)
+        print("ri:")
+        hexdump.hexdump(buffer_ri)
+
+        plain = my_dev.decipher(buffer_bt, my_dev.device_key, None, 0, 0x40)
+
+        print("dec(bt):")
+        hexdump.hexdump(plain)
+
+        assert len(buffer_bt) == len(plain)
+        assert buffer_bt != plain
+        assert buffer_ri == plain
+
+        # ciphering test
+        ciphered = my_dev.cipher(plain, my_dev.device_key, None, 0, 0x40)
+        print("enc(dec(bt)):")
+        hexdump.hexdump(ciphered)
+
+        assert len(plain) == len(ciphered)
+        assert ciphered != plain
+        assert ciphered == buffer_bt
+
+    def test_v3crypto(self):
+        my_dev = LuniiDevice("../test/_v3")
+
+        # with open("../test/_v2/.content/4CDF38C6/bt", "rb") as bt:
+        #     buffer_bt = bt.read()
+        # with open("../test/_v2/.content/4CDF38C6/ri", "rb") as ri:
+        #     buffer_ri = ri.read(0x40)
+
+        # # deciphering test
+        # assert len(buffer_bt) == len(buffer_ri)
+        # assert buffer_bt != buffer_ri
+
+        # print("bt:")
+        # hexdump.hexdump(buffer_bt)
+        # print("ri:")
+        # hexdump.hexdump(buffer_ri)
+
+        # plain = my_dev.decipher(buffer_bt, my_dev.device_key, None, 0, 0x40)
+
+        # print("dec(bt):")
+        # hexdump.hexdump(plain)
+
+        # assert len(buffer_bt) == len(plain)
+        # assert buffer_bt != plain
+        # assert buffer_ri == plain
+
+        # # ciphering test
+        # ciphered = my_dev.cipher(plain, my_dev.device_key, None, 0, 0x40)
+        # print("enc(dec(bt)):")
+        # hexdump.hexdump(ciphered)
+
+        # assert len(plain) == len(ciphered)
+        # assert ciphered != plain
+        # assert ciphered == buffer_bt
+
+        pass
 
 if __name__ == '__main__':
     unittest.main()
