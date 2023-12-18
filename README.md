@@ -11,14 +11,23 @@ This is a simple CLI application that allows basic operations like export/import
 *(nothing)*
 * update structure with v2 v3 support
 * ~~validate cipher / decipher on v2~~
-* validate cipher / decipher on v3
 * v3 specifics
   * read keys from bin file (optionnal)
   * validate keys
+* validate cipher / decipher on v3
+  * import pycryptdome
+  
 * ~~update all exports to .mp3 .bmp .plain (v2 only) -> .plain.pk~~
+* ~~update import to support directory~~
 * update import to cipher
-  * v2 : with xxxtea
+  * ~~v2 : with xxxtea~~
+  * validate plain.pk before import
+    * ri, si, li, ni present
+    * check contents (rf sf files present)
+    * check rf sf sizes ?
   * v3 : with aes using .md_bt
+  * add support for .v2.pk
+  * ~~add support for prev .zip~~
 * if v3 bin key file, allow
   * export for v3 (if keys available), as plain ?
   * check story

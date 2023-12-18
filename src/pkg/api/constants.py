@@ -20,3 +20,9 @@ TQDM_BAR_FORMAT = "{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"
 
 LUNII_V2 = 2
 LUNII_V3 = 3
+
+TYPE_UNK    = 0
+TYPE_PLAIN  = 1
+TYPE_V2     = 2
+TYPE_V3     = 3
+TYPE_ZIP    = 10

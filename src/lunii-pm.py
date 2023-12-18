@@ -1,4 +1,4 @@
-import json
+import os
 import click
 from pkg.api.device import LuniiDevice, find_devices, is_device
 from pkg.api.stories import story_name
@@ -20,7 +20,7 @@ def exit_help():
 @click.option('--info', '-i', "info", is_flag=True, help="Prints informations about the storyteller")
 @click.option('--list', '-l', "slist", is_flag=True, help="List all stories available in Lunii Storyteller")
 @click.option('--pack-export', '-pe', "exp", type=str, default=None, help="Export selected story to an archive (or use ALL)")
-@click.option('--pack-import', '-pi', "imp", type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None, help="Import a story archive in the Lunii")
+@click.option('--pack-import', '-pi', "imp", type=click.Path(exists=True, file_okay=True, dir_okay=True), default=None, help="Import a story archive in the Lunii")
 @click.option('--pack-remove', '-pr', "rem", type=str, default=None, help="Remove a story from the Lunii")
 def cli_main(verbose, find, dev, info, slist, exp, imp, rem):
     valid_dev_list = find_devices()
@@ -66,8 +66,10 @@ def cli_main(verbose, find, dev, info, slist, exp, imp, rem):
     elif exp:
         zip_list = []
         if exp.upper() == "ALL":
+            # full export
             zip_list = my_dev.export_all("./")
         else:
+            # single to export
             one_zip = my_dev.export_story(exp, "./")
             if one_zip:
                 zip_list.append(one_zip)
@@ -80,11 +82,18 @@ def cli_main(verbose, find, dev, info, slist, exp, imp, rem):
             click.echo("ERROR: Failed to export")
         return
     elif imp:
-        res = my_dev.import_story(imp)
+        if os.path.isfile(imp):
+            # single story to import
+            res = my_dev.import_story(imp)
+        else:
+            # directory to import
+            res = my_dev.import_dir(imp)
         if not res:
             click.echo("ERROR: Failed to import")
         else:
-            click.echo("Story imported.")
+            click.echo("Stories imported.")
+
+    
     elif rem:
         res = my_dev.remove_story(rem)
         if not res:
