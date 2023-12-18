@@ -26,3 +26,4 @@ TYPE_PLAIN  = 1
 TYPE_V2     = 2
 TYPE_V3     = 3
 TYPE_ZIP    = 10
+TYPE_7Z     = 11

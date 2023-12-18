@@ -11,20 +11,25 @@ class testLunii_API(unittest.TestCase):
     def test_1_stories(self):
         
         # getting name of all stories
-        for key in STORY_PACKS.keys():
-            assert story_name(key) == STORY_PACKS[key]
+        count = 0
+        for key in UUID_DB.keys():
+            if UUID_DB[key].get('title'):
+                count += 1
+                assert story_name(key) == UUID_DB[key].get('title')
+        print(count)
+        assert count
 
         # unknown story
         unknown_uuid = UUID("00000000-0000-0000-0000-000000000000")
         assert story_name(unknown_uuid) == STORY_UNKNOWN
 
     def test_2_story_feed(self):
-        stories_list = feed_stories("./test/")
+        stories_list = feed_stories("./test/_v2/")
         for story in stories_list:
             print(f"{story} - {story_name(story)}")
 
     def test_3_device(self):
-        my_dev = LuniiDevice("./test/")
+        my_dev = LuniiDevice("./test/_v2/")
 
         assert my_dev.fw_vers_major == 2
         assert my_dev.fw_vers_minor >= 0x16
@@ -34,7 +39,7 @@ class testLunii_API(unittest.TestCase):
         print(my_dev)
 
     def test_4_find_devices(self):
-        dev_list = find_devices("./test/")
+        dev_list = find_devices("./test/_v2/")
         print(dev_list)
 
     def test_5_stories(self):
@@ -87,11 +92,11 @@ class testLunii_API(unittest.TestCase):
         assert len(ulist) >= 1
 
     def test_v2crypto(self):
-        my_dev = LuniiDevice("../test/_v2")
+        my_dev = LuniiDevice("./test/_v2")
 
-        with open("../test/_v2/.content/4CDF38C6/bt", "rb") as bt:
+        with open("./test/_v2/.content/1BBA473C/bt", "rb") as bt:
             buffer_bt = bt.read()
-        with open("../test/_v2/.content/4CDF38C6/ri", "rb") as ri:
+        with open("./test/_v2/.content/1BBA473C/ri", "rb") as ri:
             buffer_ri = ri.read(0x40)
 
         # deciphering test
@@ -122,7 +127,7 @@ class testLunii_API(unittest.TestCase):
         assert ciphered == buffer_bt
 
     def test_v3crypto(self):
-        my_dev = LuniiDevice("../test/_v3")
+        my_dev = LuniiDevice("./test/_v3")
 
         # with open("../test/_v2/.content/4CDF38C6/bt", "rb") as bt:
         #     buffer_bt = bt.read()

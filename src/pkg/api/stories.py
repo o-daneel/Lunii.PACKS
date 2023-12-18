@@ -4,6 +4,7 @@ from uuid import UUID
 
 STORY_UNKNOWN = "Unknown story (maybe a User created story)..."
 
+# https://server-data-prod.lunii.com/v2/packs
 UUID_DB = {}
 if os.path.isfile("packs/official.json"):
     with open("packs/official.json", encoding='utf-8') as fp_db:

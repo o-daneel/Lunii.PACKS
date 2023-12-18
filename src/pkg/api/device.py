@@ -260,13 +260,19 @@ class LuniiDevice:
             type = TYPE_PLAIN
         elif story_path.lower().endswith('.v2.pk'):
             type = TYPE_V2
+        elif story_path.lower().endswith('.v1.pk'):
+            type = TYPE_V2
         elif story_path.lower().endswith('.zip'):
             type = TYPE_ZIP
+        elif story_path.lower().endswith('.7z'):
+            type = TYPE_7Z
         else:
             # trying to figure out based on zip contents
             with zipfile.ZipFile(file=story_path) as zip_file:
                 # reading all available files
                 zip_contents = zip_file.namelist()
+
+                # based on bt file
                 bt_files = [entry for entry in zip_contents if entry.endswith("bt")]
                 if bt_files:
                     bt_size = zip_file.getinfo(bt_files[0]).file_size
@@ -274,12 +280,17 @@ class LuniiDevice:
                         type = TYPE_V3
                     else:
                         type = TYPE_V2
+                
+                # based on ri decipher with xxtea
+                        # type = TYPE_V2
 
         # processing story
         if type == TYPE_PLAIN:
             return self.import_story_plain(story_path)
         elif type == TYPE_ZIP:
             return self.import_story_zip(story_path)
+        elif type == TYPE_7Z:
+            return self.import_story_7z(story_path)
         elif type == TYPE_V2:
             return self.import_story_v2(story_path)
         elif type == TYPE_V3:
@@ -416,12 +427,96 @@ class LuniiDevice:
 
         return True
 
+    def import_story_7z(self, story_path):
+        print("ERROR : unsupported story format")
+        return False
+
     def import_story_v2(self, story_path):
-        pass
+        # opening zip file
+        with zipfile.ZipFile(file=story_path) as zip_file:
+            # reading all available files
+            zip_contents = zip_file.namelist()
+
+            # getting UUID from path
+            if zip_file.getinfo(zip_contents[0]).is_dir():
+                print(zip_contents[0][:-1])
+                if "-" not in zip_contents[0]:
+                    new_uuid = UUID(bytes=binascii.unhexlify(zip_contents[0][:-1]))
+                else:
+                    new_uuid = UUID(zip_contents[0][:-1])
+            else:
+                print("ERROR: UUID directory is missing in archive !")
+                return False
+
+            # checking if UUID already loaded
+            if str(new_uuid) in self.stories:
+                print("ERROR: This story is already loaded, aborting !")
+                return False
+
+            # decompressing story contents
+            output_path = Path(self.mount_point).joinpath(f".content/")
+            # {str(new_uuid).upper()[28:]
+            if not output_path.exists():
+                output_path.mkdir(parents=True)
+
+            # Loop over each file
+            count = 0
+            pbar = tqdm(iterable=zip_contents, total=len(zip_contents), bar_format=TQDM_BAR_FORMAT)
+            for file in pbar:
+                count += 1
+                pbar.set_description(f"Processing {file}")
+                if zip_file.getinfo(file).is_dir():
+                    continue
+                if file.endswith("bt"):
+                    continue
+
+                # Extract each zip file
+                data_v2 = zip_file.read(file)
+
+                # stripping extra uuid chars
+                file = file[24:]
+
+                if self.lunii_version == LUNII_V2:
+                    # from v2 to v2, data can be kept as it is
+                    data = data_v2
+                else:
+                    # need to transcipher for v3
+                    if file.endswith("ni") or file.endswith("nm"):
+                        data_plain = data_v2
+                    else:
+                        data_plain = self.__v2_decipher(data_v2, lunii_generic_key, 0, 512)
+                    # updating filename, and ciphering header if necessary
+                    data = self.__get_ciphered_data(file, data_plain)
+                    file_newname = self.__get_ciphered_name(file)
+
+                target: Path = output_path.joinpath(file_newname)
+
+                # create target directory
+                if not target.parent.exists():
+                    target.parent.mkdir(parents=True)
+                # write target file
+                with open(target, "wb") as f_dst:
+                    f_dst.write(data)
+
+                # in case of v2 device, we need to prepare bt file 
+                if self.lunii_version == LUNII_V2 and file.endswith("ri"):
+                    self.bt = self.cipher(data[0:0x40], self.device_key)
+
+        # creating authorization file : bt
+        print("INFO : Authorization file creation...")
+        bt_path = output_path.joinpath(str(new_uuid)[28:]+"/bt")
+        with open(bt_path, "wb") as fp_bt:
+            fp_bt.write(self.bt)
+
+        # updating .pi file to add new UUID
+        self.stories.append(new_uuid)
+        self.update_pack_index()
+
+        return True
 
     def import_story_v3(self, story_path):
         print("ERROR : unsupported story format")
-        pass
+        return False
 
     def remove_story(self, short_uuid):
         if short_uuid not in self.stories:
