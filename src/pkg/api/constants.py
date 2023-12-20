@@ -27,3 +27,11 @@ TYPE_V2     = 2
 TYPE_V3     = 3
 TYPE_ZIP    = 10
 TYPE_7Z     = 11
+
+EXT_PK_PLAIN = ".plain.pk"
+EXT_PK_V2    = ".v2.pk"
+EXT_PK_V1    = ".v1.pk"
+EXT_ZIP      = ".zip"
+EXT_7z       = ".7z"
+
+SUPPORTED_EXT = [EXT_ZIP, EXT_7z, EXT_PK_V1, EXT_PK_V2, EXT_PK_PLAIN]

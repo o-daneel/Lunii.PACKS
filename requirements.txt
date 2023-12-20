@@ -1,3 +1,5 @@
 xxtea
 click
 tqdm
+py7zr
+pycryptodome

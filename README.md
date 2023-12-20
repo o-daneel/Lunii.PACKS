@@ -46,6 +46,11 @@ This is a simple CLI application that allows basic operations like export/import
   - [HowTo](#howto)
     - [Prepare env](#prepare-env)
     - [Build CLI executable](#build-cli-executable)
+  - [Formats supported](#formats-supported)
+    - [.plain.pk](#plainpk)
+    - [.v1.pk / .v2.pk](#v1pk--v2pk)
+    - [zip](#zip)
+    - [7z](#7z)
   - [Examples](#examples)
     - [Finding my Storyteller](#finding-my-storyteller)
     - [Getting info](#getting-info)
@@ -109,6 +114,19 @@ $ pyinstaller lunii-pm.spec
 ...
 $ dist\lunii-pm.exe
 ```
+
+## Formats supported
+### .plain.pk
+      uuid.bin
+      ni
+      li.plain
+      ri.plain
+      si.plain
+      rf/000/XXXXXX.bmp
+      sf/000/XXXXXX.mp3
+### .v1.pk / .v2.pk
+### zip
+### 7z
 
 ## Examples
 
