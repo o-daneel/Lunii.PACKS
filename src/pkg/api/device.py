@@ -2,6 +2,7 @@ import glob
 import os
 import shutil
 import zipfile
+import psutil
 import py7zr
 import xxtea
 import binascii
@@ -254,6 +255,12 @@ class LuniiDevice:
             return
 
         type = TYPE_UNK
+
+        archive_size = os.path.getsize(story_path)
+        free_space = psutil.disk_usage(str(self.mount_point)).free
+        if archive_size >= free_space:
+            print(f"ERROR: Not enough space left on Lunii (only {free_space//1024//1024}MB)")
+            return False
         
         # identifying based on filename
         if story_path.lower().endswith(EXT_PK_PLAIN):
