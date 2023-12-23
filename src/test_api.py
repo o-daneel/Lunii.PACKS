@@ -128,7 +128,7 @@ class testLunii_API(unittest.TestCase):
         assert ciphered != plain
         assert ciphered == buffer_bt
 
-    def test_v3crypto(self):
+    def test_v3crypto_1(self):
         my_v3 = LuniiDevice("./test/_v3")
 
         with open("./test/_v3/.content/1BBA473C/sf/000/6CBA9EAA.mp3", "rb") as mp3_p:
@@ -152,6 +152,41 @@ class testLunii_API(unittest.TestCase):
         assert len(plain) == len(ciphered)
         assert ciphered != plain
         assert mp3_plain == plain
+
+    def test_v3crypto_2(self):
+        my_v3 = LuniiDevice("./test/_v3", "./test/_v3/odaneel.keys")
+
+        assert my_v3.device_key
+        assert my_v3.device_iv
+
+        fake_key, fake_iv = my_v3.story_key, my_v3.story_iv
+        my_v3.load_story_keys("./test/_v3/.content/1BBA473C/bt")
+        assert fake_key != my_v3.story_key
+        assert fake_iv != my_v3.story_iv
+
+        with open("./test/_v3/.content/1BBA473C/ri", "rb") as fp_ri:
+            ri_ciph = fp_ri.read()
+
+        print("(ri_c):")
+        hexdump.hexdump(ri_ciph)
+
+        # deciphering test
+        plain = my_v3.decipher(ri_ciph, my_v3.story_key, my_v3.story_iv)
+        print("dec(ri_c):")
+        hexdump.hexdump(plain)
+
+        assert len(plain) == len(ri_ciph)
+        assert plain != ri_ciph
+        assert plain[:3] == b"000"
+
+        # ciphering test
+        ciphered = my_v3.cipher(plain, my_v3.story_key, my_v3.story_iv)
+        print("enc(dec(ri_c)):")
+        hexdump.hexdump(ciphered)
+
+        assert len(plain) == len(ciphered)
+        assert ciphered != plain
+        assert ciphered == ri_ciph
 
 if __name__ == '__main__':
     unittest.main()

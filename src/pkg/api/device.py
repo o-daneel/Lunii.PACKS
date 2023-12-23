@@ -13,7 +13,7 @@ from Crypto.Cipher import AES
 
 from tqdm import tqdm
 
-from pkg.api.aes_keys import dev_iv, dev_key, reverse_bytes
+from pkg.api.aes_keys import fetch_keys, reverse_bytes
 from pkg.api.constants import *
 from pkg.api.stories import StoryList, story_name
 
@@ -21,12 +21,13 @@ from pkg.api.stories import StoryList, story_name
 class LuniiDevice:
     stories: StoryList
 
-    def __init__(self, mount_point):
+    def __init__(self, mount_point, keyfile=None):
         self.mount_point = mount_point
 
         # dummy values
         self.lunii_version = 0
         self.UUID = ""
+        self.dev_feyfile = keyfile
         self.device_key = None
         self.device_iv = None
         self.story_key = None
@@ -87,11 +88,9 @@ class LuniiDevice:
         fp_md.seek(0x40)
         self.bt = fp_md.read(0x20)
         # forging keys based on md ciphered part
-        self.story_key = reverse_bytes(binascii.hexlify(self.snu) + b"\x00\x00")
-        self.story_iv = reverse_bytes(b"\x00\x00\x00\x00\x00\x00\x00\x00" + binascii.hexlify(self.snu)[:8])
+        self.load_fakestory_keys()
         # real keys if available
-        self.device_key = dev_key
-        self.device_iv = dev_iv
+        self.device_key, self.device_iv = fetch_keys(self.dev_feyfile)
 
     def __v2_decipher(self, buffer, key, offset, dec_len):
         # checking offset
@@ -172,20 +171,45 @@ class LuniiDevice:
         else:
             return self.__v3_cipher(buffer, key, iv, offset, enc_len)
 
+    def load_story_keys(self, bt_file_path):
+        if self.device_key and self.device_iv and bt_file_path and os.path.isfile(bt_file_path):
+            # loading real keys from bt file
+            with open(bt_file_path, "rb") as fpbt:
+                ciphered = fpbt.read(0x20)
+            plain = self.decipher(ciphered, self.device_key, self.device_iv)
+            self.story_key = reverse_bytes(plain[:0x10])
+            self.story_iv = reverse_bytes(plain[0x10:0x20])
+        else:
+            # forging keys based on md ciphered part
+             self.load_fakestory_keys()
+
+    def load_fakestory_keys(self):
+        # forging keys based on md ciphered part
+        self.story_key = reverse_bytes(binascii.hexlify(self.snu) + b"\x00\x00")
+        self.story_iv = reverse_bytes(b"\x00\x00\x00\x00\x00\x00\x00\x00" + binascii.hexlify(self.snu)[:8])
+
     @property
     def snu_hex(self):
         return self.snu
     
     def __repr__(self):
+        dev_key = b""
+        dev_iv  = b""
+
+        if self.device_key:
+            dev_key = binascii.hexlify(self.device_key, ' ')
+        if self.device_iv:
+            dev_iv = binascii.hexlify(self.device_iv, ' ')
+
         repr_str  = f"Lunii device on \"{self.mount_point}\"\n"
         if self.lunii_version == LUNII_V2:
             repr_str += f"- firmware : v{self.fw_vers_major}.{self.fw_vers_minor}\n"
         else:
             repr_str += f"- firmware : v{self.fw_vers_major}.{self.fw_vers_minor}.{self.fw_vers_subminor}\n"
         repr_str += f"- snu      : {binascii.hexlify(self.snu_hex, ' ')}\n"
-        repr_str += f"- dev key  : {binascii.hexlify(self.device_key, ' ')}\n"
+        repr_str += f"- dev key  : {dev_key}\n"
         if self.lunii_version == LUNII_V3:
-            repr_str += f"- dev iv   : {binascii.hexlify(self.device_iv, ' ')}\n"
+            repr_str += f"- dev iv   : {dev_iv}\n"
         repr_str += f"- stories  : {len(self.stories)}x\n"
         return repr_str
 

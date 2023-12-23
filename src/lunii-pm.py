@@ -19,10 +19,11 @@ def exit_help():
 @click.option('--dev', '-d', "dev", type=click.Path(exists=True, file_okay=False, dir_okay=True), default=None, help="Specifies which drives letter to use for Lunii Storyteller")
 @click.option('--info', '-i', "info", is_flag=True, help="Prints informations about the storyteller")
 @click.option('--list', '-l', "slist", is_flag=True, help="List all stories available in Lunii Storyteller")
+@click.option('--key',  '-k', "key_v3", type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None, help="Device Key file for Lunii v3")
 @click.option('--pack-export', '-pe', "exp", type=str, default=None, help="Export selected story to an archive (or use ALL)")
 @click.option('--pack-import', '-pi', "imp", type=click.Path(exists=True, file_okay=True, dir_okay=True), default=None, help="Import a story archive in the Lunii")
 @click.option('--pack-remove', '-pr', "rem", type=str, default=None, help="Remove a story from the Lunii")
-def cli_main(verbose, find, dev, info, slist, exp, imp, rem):
+def cli_main(verbose, find, dev, info, slist, key_v3, exp, imp, rem):
     valid_dev_list = find_devices()
 
     # at least one command is required
@@ -34,7 +35,7 @@ def cli_main(verbose, find, dev, info, slist, exp, imp, rem):
         print(f"Found {len(valid_dev_list)} connected device(s)")
 
         for dev in valid_dev_list:
-            one_dev = LuniiDevice(dev)
+            one_dev = LuniiDevice(dev, key_v3)
             print(f"  \"{one_dev.mount_point}\" - {len(one_dev.stories)} stories")
         return
 
@@ -48,7 +49,7 @@ def cli_main(verbose, find, dev, info, slist, exp, imp, rem):
         return
 
     # using selected device
-    my_dev = LuniiDevice(dev)
+    my_dev = LuniiDevice(dev, key_v3)
 
     if info:
         print(my_dev)
