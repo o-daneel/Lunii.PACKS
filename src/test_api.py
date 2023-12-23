@@ -29,14 +29,16 @@ class testLunii_API(unittest.TestCase):
             print(f"{story} - {story_name(story)}")
 
     def test_3_device(self):
-        my_dev = LuniiDevice("./test/_v2/")
-
-        assert my_dev.fw_vers_major == 2
-        assert my_dev.fw_vers_minor >= 0x16
-        assert my_dev.snu
-        assert my_dev.raw_devkey
-
+        my_dev = LuniiDevice("./test/_v3/")
         print(my_dev)
+
+        assert my_dev.fw_vers_major == 3
+        assert my_dev.fw_vers_minor == 1
+        assert my_dev.fw_vers_subminor >= 2
+        assert my_dev.snu
+        assert len(my_dev.snu) == 7
+        assert my_dev.story_key
+        assert my_dev.story_iv
 
     def test_4_find_devices(self):
         dev_list = find_devices("./test/_v2/")
@@ -127,41 +129,29 @@ class testLunii_API(unittest.TestCase):
         assert ciphered == buffer_bt
 
     def test_v3crypto(self):
-        my_dev = LuniiDevice("./test/_v3")
+        my_v3 = LuniiDevice("./test/_v3")
 
-        # with open("../test/_v2/.content/4CDF38C6/bt", "rb") as bt:
-        #     buffer_bt = bt.read()
-        # with open("../test/_v2/.content/4CDF38C6/ri", "rb") as ri:
-        #     buffer_ri = ri.read(0x40)
+        with open("./test/_v3/.content/1BBA473C/sf/000/6CBA9EAA.mp3", "rb") as mp3_p:
+            mp3_plain = mp3_p.read()
+        with open("./test/_v3/.content/1BBA473C/sf/000/6CBA9EAA", "rb") as mp3_c:
+            mp3_ciph = mp3_c.read()
 
-        # # deciphering test
-        # assert len(buffer_bt) == len(buffer_ri)
-        # assert buffer_bt != buffer_ri
+        # ciphering test
+        ciphered = my_v3.cipher(mp3_plain, my_v3.story_key, my_v3.story_iv)
+        print("enc(mp3_p):")
+        hexdump.hexdump(ciphered[:0x280])
 
-        # print("bt:")
-        # hexdump.hexdump(buffer_bt)
-        # print("ri:")
-        # hexdump.hexdump(buffer_ri)
+        assert len(mp3_plain) == len(ciphered)
+        assert ciphered != mp3_plain
 
-        # plain = my_dev.decipher(buffer_bt, my_dev.device_key, None, 0, 0x40)
+        # deciphering test
+        plain = my_v3.decipher(ciphered, my_v3.story_key, my_v3.story_iv)
+        print("dec(enc(mp3_p)):")
+        hexdump.hexdump(plain[:0x280])
 
-        # print("dec(bt):")
-        # hexdump.hexdump(plain)
-
-        # assert len(buffer_bt) == len(plain)
-        # assert buffer_bt != plain
-        # assert buffer_ri == plain
-
-        # # ciphering test
-        # ciphered = my_dev.cipher(plain, my_dev.device_key, None, 0, 0x40)
-        # print("enc(dec(bt)):")
-        # hexdump.hexdump(ciphered)
-
-        # assert len(plain) == len(ciphered)
-        # assert ciphered != plain
-        # assert ciphered == buffer_bt
-
-        pass
+        assert len(plain) == len(ciphered)
+        assert ciphered != plain
+        assert mp3_plain == plain
 
 if __name__ == '__main__':
     unittest.main()
