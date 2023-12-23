@@ -117,17 +117,55 @@ $ dist\lunii-pm.exe
 
 ## Formats supported
 ### .plain.pk
+**Filename** :  `story_name.8B_UUID.plain.pk`  
+**Ciphering** : None / Plain  
+**Structure** :  
+
       uuid.bin
       ni
       li.plain
       ri.plain
       si.plain
-      rf/000/XXXXXX.bmp
-      sf/000/XXXXXX.mp3
+      rf/000/XXYYXXYY.bmp
+      sf/000/XXYYXXYY.mp3
 ### .v1.pk / .v2.pk
-### zip
-### 7z
+**Filename** :  
+* `LONG_UUID.v2.pk`  
+* `LONG_UUID.v2.pk`  
+* `LONG_UUID.pk`  
+  
+**Ciphering** : Generic Key  
+**Structure** :  
 
+      00000000000000000000000000000000/ni
+      00000000000000000000000000000000/li
+      00000000000000000000000000000000/ri
+      00000000000000000000000000000000/si
+      00000000000000000000000000000000/rf/000/XXYYXXYY
+      00000000000000000000000000000000/sf/000/XXYYXXYY
+### zip
+**Filename** :  `8B_UUID - story_name.zip`  
+**Ciphering** : Generic Key  
+**Structure** :  
+
+      uuid.bin
+      ni
+      li
+      ri
+      si
+      rf/000/XXYYXXYY
+      sf/000/XXYYXXYY
+### 7z
+**Filename** : `AGE+] story_title DASHED_UUID.7z`  
+**Ciphering** : Generic Key  
+**Structure** :  
+
+      00000000-0000-0000-0000-000000000000/ni
+      00000000-0000-0000-0000-000000000000/li
+      00000000-0000-0000-0000-000000000000/ri
+      00000000-0000-0000-0000-000000000000/si
+      00000000-0000-0000-0000-000000000000/rf/000/XXYYXXYY
+      00000000-0000-0000-0000-000000000000/sf/000/XXYYXXYY
 ## Examples
 
 ### Finding my Storyteller
