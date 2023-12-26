@@ -716,12 +716,19 @@ class LuniiDevice:
         print("   ERROR : unsupported story format")
         return False
 
-    def export_story(self, uuid, out_path):
-        # TO REMOVE SOON
-        if self.lunii_version == LUNII_V3:
-            print("Lunii v3 not yet supported for export")
-            return None
+    def __story_check_key(self, story_path, key, iv):
+        # Trying to decipher RI/SI for path check
+        ri_path = story_path.joinpath("ri")
+        if not os.path.isfile(ri_path):
+            return False
+        
+        with open(ri_path, "rb") as fp_ri:
+            ri_content = fp_ri.read()
 
+        plain = self.decipher(ri_content, self.story_key, self.story_iv)
+        return plain[:3] == b"000"
+
+    def export_story(self, uuid, out_path):
         # is UUID part of existing stories
         if uuid not in self.stories:
             return None
@@ -746,6 +753,15 @@ class LuniiDevice:
         
         print(f"[{uuid} - {self.stories.name(uuid)}]")
 
+        # for Lunii v3, checking keys (original or trick)
+        if self.lunii_version == LUNII_V3:
+            # loading story keys
+            self.load_story_keys(str(story_path.joinpath("bt")))
+            # are keys usable ?
+            if not self.__story_check_key(story_path, self.story_key, self.story_iv):
+                print("   ERROR: Lunii v3 requires Device Key for genuine story export.")
+                return None
+
         # Preparing zip file
         sname = self.stories.name(uuid)
         sname = sname.replace('\\', '_')
@@ -753,6 +769,10 @@ class LuniiDevice:
         sname = sname.replace(':', '_')
 
         zip_path = Path(out_path).joinpath(f"{sname}.{uuid}.plain.pk")
+        if os.path.isfile(zip_path):
+            print(f"   WARN: Already exported")
+            return None
+        
         # preparing file list
         story_flist = []
         for root, dirnames, filenames in os.walk(story_path):
@@ -761,23 +781,27 @@ class LuniiDevice:
                     continue
                 story_flist.append(os.path.join(root, filename))
 
-        with zipfile.ZipFile(zip_path, 'w') as zip_out:
-            print("> Zipping story ...")
-            pbar = tqdm(iterable=story_flist, total=len(story_flist), bar_format=TQDM_BAR_FORMAT)
-            for file in pbar:
-                target_name = Path(file).relative_to(story_path)
-                pbar.set_description(f"Processing {target_name}")
+        try:
+            with zipfile.ZipFile(zip_path, 'w') as zip_out:
+                print("> Zipping story ...")
+                pbar = tqdm(iterable=story_flist, total=len(story_flist), bar_format=TQDM_BAR_FORMAT)
+                for file in pbar:
+                    target_name = Path(file).relative_to(story_path)
+                    pbar.set_description(f"Processing {target_name}")
 
-                # Extract each file to another directory
-                # decipher if necessary (mp3 / bmp / li / ri / si)
-                data_plain = self.__get_plain_data(file)
-                file_newname = self.__get_plain_name(file, uuid)
-                zip_out.writestr(file_newname, data_plain)
+                    # Extract each file to another directory
+                    # decipher if necessary (mp3 / bmp / li / ri / si)
+                    data_plain = self.__get_plain_data(file)
+                    file_newname = self.__get_plain_name(file, uuid)
+                    zip_out.writestr(file_newname, data_plain)
 
-            # adding uuid file
-            print("> Adding UUID ...")
-            zip_out.writestr("uuid.bin", full_uuid.bytes)
-
+                # adding uuid file
+                print("> Adding UUID ...")
+                zip_out.writestr("uuid.bin", full_uuid.bytes)
+        except PermissionError as e:
+            print(f"   ERROR: failed to create ZIP - {e}")
+            return None
+        
         return zip_path
     
     def remove_story(self, short_uuid):

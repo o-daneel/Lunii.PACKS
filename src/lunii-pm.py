@@ -80,7 +80,7 @@ def cli_main(verbose, find, dev, info, slist, key_v3, exp, imp, rem):
             for one_zip in zip_list:
                 click.echo(f"  {one_zip}")
         else:
-            click.echo("ERROR: Failed to export")
+            click.echo("   ERROR: Failed to export")
         return
     elif imp:
         if os.path.isfile(imp):
