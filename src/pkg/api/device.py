@@ -214,9 +214,6 @@ class LuniiDevice:
         return repr_str
 
     def export_all(self, out_path):
-        if self.lunii_version == LUNII_V3:
-            return
-        
         archives = []
         for count, story in enumerate(self.stories):
             print(f"{count+1:>2}/{len(self.stories)} ", end="")
@@ -291,8 +288,11 @@ class LuniiDevice:
         return data
 
     def __get_ciphered_name(self, file):
-        uuid_dir = file[:8].upper()
-        file = uuid_dir + file[8:]
+        # upper case uuid dir
+        if len(file) > 15:
+            uuid_dir = file[:15].upper()
+            file = uuid_dir + file[15:]
+
         file = file.removesuffix('.plain')
         file = file.removesuffix('.mp3')
         file = file.removesuffix('.bmp')
