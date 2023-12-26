@@ -777,7 +777,7 @@ class LuniiDevice:
         story_flist = []
         for root, dirnames, filenames in os.walk(story_path):
             for filename in filenames:
-                if filename == "bt":
+                if filename in ["bt", "md"]:
                     continue
                 story_flist.append(os.path.join(root, filename))
 
