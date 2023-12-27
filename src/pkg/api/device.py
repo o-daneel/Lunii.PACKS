@@ -240,15 +240,27 @@ class LuniiDevice:
             data = fsrc.read()
 
         # selecting key
-        key = lunii_generic_key
+        key = None
+        if self.lunii_version == LUNII_V2:
+            key = lunii_generic_key
+            iv = None
+        elif self.lunii_version == LUNII_V3:
+            key = self.story_key
+            iv = self.story_iv
+           
         if file.endswith("bt"):
-            key = self.device_key
+            if self.lunii_version == LUNII_V2:
+                key = self.device_key
+                iv = None
+            elif self.lunii_version == LUNII_V3:
+                key = self.device_key
+                iv = self.device_iv
         if file.endswith("ni") or file.endswith("nm"):
             key = None
 
         # process file with correct key
         if key:
-            return self.decipher(data, key)
+            return self.decipher(data, key, iv)
 
         return data
 
