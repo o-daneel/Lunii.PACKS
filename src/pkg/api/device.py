@@ -1,6 +1,7 @@
 import glob
 import os
 import shutil
+import unicodedata
 import zipfile
 import psutil
 import py7zr
@@ -300,14 +301,23 @@ class LuniiDevice:
         return data
 
     def __get_ciphered_name(self, file):
-        # upper case uuid dir
-        if len(file) > 15:
-            uuid_dir = file[:15].upper()
-            file = uuid_dir + file[15:]
-
         file = file.removesuffix('.plain')
         file = file.removesuffix('.mp3')
         file = file.removesuffix('.bmp')
+
+        # upcasing filename
+        bn = os.path.basename(file)
+        if len(bn) >= 8:
+            file = os.path.join(os.path.dirname(file),bn.upper())
+
+        # upcasing uuid dir if present
+        dn = os.path.dirname(file)
+        if len(dn) >= 8:
+            dir_head = file[0:8]
+            if "/" not in dir_head and "\\" not in dir_head:
+                file = dir_head.upper() + file[8:]
+
+        # print(file)
         return file
 
     def import_dir(self, story_path):
@@ -776,9 +786,7 @@ class LuniiDevice:
 
         # Preparing zip file
         sname = self.stories.name(uuid)
-        sname = sname.replace('\\', '_')
-        sname = sname.replace('/', '_')
-        sname = sname.replace(':', '_')
+        sname = secure_filename(sname)
 
         zip_path = Path(out_path).joinpath(f"{sname}.{uuid}.plain.pk")
         if os.path.isfile(zip_path):
@@ -845,6 +853,23 @@ class LuniiDevice:
 
         return True
 
+
+def secure_filename(filename):
+    INVALID_FILE_CHARS = '/\\?%*:|"<>' # https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
+
+    # keep only valid ascii chars
+    output = list(unicodedata.normalize("NFKD", filename))
+
+    # special case characters that don't get stripped by the above technique
+    for pos, char in enumerate(output):
+        if char == '\u0141':
+            output[pos] = 'L'
+        elif char == '\u0142':
+            output[pos] = 'l'
+
+    # remove unallowed characters
+    output = [c if c not in INVALID_FILE_CHARS else '_' for c in output]
+    return "".join(output).encode("ASCII", "ignore").decode()
 
 
 # opens the .pi file to read all installed stories
