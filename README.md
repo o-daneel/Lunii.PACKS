@@ -59,6 +59,7 @@ This is a simple CLI application that allows basic operations like export/import
     - [Exporting ALL stories](#exporting-all-stories)
     - [Removing a story](#removing-a-story)
     - [Importing a story](#importing-a-story)
+    - [Importing multiple stories](#importing-multiple-stories)
 - [Links / Similar repos](#links--similar-repos)
 
 ## Usage - Command Line Interface
@@ -294,6 +295,26 @@ If a story already exists, import will fail
 INFO : using Lunii device on D:\
 ERROR: This story is already loaded, aborting !
 ERROR: Failed to import
+```
+
+### Importing multiple stories
+```
+> .\lunii-pm.exe -pi ./packs
+INFO : using Lunii device on D:\
+Importing 4 archives...
+ 1/4 > U:\Lunii\plain.pk\1+\Promenons-nous avec les chiffres !.70FFDD7E.plain.pk
+Processing sf/000/E3E6340F.mp3: 100%|██████████████████████████████████| 31/31 [00:00<00:00]
+   INFO : Authorization file creation...
+ 2/4 > U:\Lunii\plain.pk\1+\Promenons-nous dans les bruits - L'intégrale.75F16A2F.plain.pk
+Processing sf/000/FBB8714C.mp3: 100%|████████████████████████████████| 120/120 [00:02<00:00]
+   INFO : Authorization file creation...
+ 3/4 > U:\Lunii\plain.pk\1+\Promenons-nous dans l’hiver !.FF6364AF.plain.pk
+Processing sf/000/ED6CF27E.mp3: 100%|██████████████████████████████████| 35/35 [00:00<00:00]
+   INFO : Authorization file creation...
+ 4/4 > U:\Lunii\plain.pk\1+\Promenons-nous à la ferme !.43019489.plain.pk
+Processing sf/000/F9C27A67.mp3: 100%|██████████████████████████████████| 35/35 [00:00<00:00]
+   INFO : Authorization file creation...
+Stories imported.
 ```
 
 # Links / Similar repos

@@ -442,8 +442,8 @@ class LuniiDevice:
                     f_dst.write(data)
 
                 # in case of v2 device, we need to prepare bt file 
-                if self.lunii_version == LUNII_V2 and file.endswith("ri"):
-                    self.bt = self.cipher(data[0:0x41], self.device_key)
+                if self.lunii_version == LUNII_V2 and file.endswith("ri.plain"):
+                    self.bt = self.cipher(data[0:0x40], self.device_key)
 
         # creating authorization file : bt
         print("   INFO : Authorization file creation...")
