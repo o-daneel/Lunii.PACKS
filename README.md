@@ -56,6 +56,7 @@ This is a simple CLI application that allows basic operations like export/import
     - [Getting info](#getting-info)
     - [Getting installed contents](#getting-installed-contents)
     - [Exporting a story](#exporting-a-story)
+    - [Exporting a genuine story from a v3](#exporting-a-genuine-story-from-a-v3)
     - [Exporting ALL stories](#exporting-all-stories)
     - [Removing a story](#removing-a-story)
     - [Importing a story](#importing-a-story)
@@ -67,7 +68,7 @@ This is a simple CLI application that allows basic operations like export/import
 ### App Version
 ````
 $ python .\src\lunii-pm.py --version
-Lunii Storyteller - Pack Manager (CLI), version 1.1.0
+Lunii Storyteller - Pack Manager (CLI), version 2.0.0
 ````
 
 ### Help
@@ -83,8 +84,9 @@ Options:
                            Storyteller
   -i, --info               Prints informations about the storyteller
   -l, --list               List all stories available in Lunii Storyteller
+  -k, --key FILE           Device Key file for Lunii v3
   -pe, --pack-export TEXT  Export selected story to an archive (or use ALL)
-  -pi, --pack-import FILE  Import a story archive in the Lunii
+  -pi, --pack-import PATH  Import a story archive in the Lunii
   -pr, --pack-remove TEXT  Remove a story from the Lunii
   --help                   Show this message and exit.
 ````
@@ -177,6 +179,7 @@ Found 1 connected device(s)
 ```
 
 ### Getting info
+#### on v2
 ```
 > .\lunii-pm.exe -i
 INFO : using Lunii device on D:\
@@ -194,6 +197,17 @@ Lunii device on "D:\"
 - firmware : v2.22
 - snu      : b'00 11 22 33 44 55 66 77'
 - dev key  : b'00 11 22 33 44 55 66 77 00 11 22 33 44 55 66 77'
+- stories  : 4x
+```
+
+#### on v3
+```
+> .\lunii-pm.exe -i
+Lunii device on "D:\"
+- firmware : v3.1.3
+- snu      : b'23 02 30 11 22 33 44'
+- dev key  : b''
+- dev iv   : b''
 - stories  : 4x
 ```
 
@@ -245,7 +259,20 @@ Successfully exported to :
   FFB5D68A - Suzanne et Gaston fêtent Pâques.zip
 ```
 
-**NOTE** : No need to type full ID given in list command. Just enough to avoid confusion.
+### Exporting a genuine story from a v3
+```
+> python .\src\lunii-pm.py -d D:\ -pe CF1
+[6C8D9CF1 - Les Aventures de Zoé – Les 6 Royaumes]
+   ERROR: Lunii v3 requires Device Key for genuine story export.
+   ERROR: Failed to export
+> python .\src\lunii-pm.py -d D:\ -pe CF1 -k .\test\_v3\odaneel.keys
+[6C8D9CF1 - Les Aventures de Zoé – Les 6 Royaumes]
+> Zipping story ...
+Processing rf\000\1475EA27: 100%|███████████████████████████████████████| 65/65 [00:07<00:00]
+> Adding UUID ...
+Successfully exported to :
+  Les Aventures de Zoe  Les 6 Royaumes.6C8D9CF1.plain.pk
+```
 
 ### Exporting ALL stories
 ```
@@ -318,7 +345,7 @@ Stories imported.
 ```
 
 # Links / Similar repos
-* [Lunii - Reverse Engineering](https://github.com/o-daneel/Lunii.RE)
+* [Lunii v3 - Reverse Engineering](https://github.com/o-daneel/Lunii_v3.RE)
 * [STUdio - Story Teller Unleashed](https://marian-m12l.github.io/studio-website/)
 * [(GitHub) STUdio, Story Teller Unleashed](https://github.com/marian-m12l/studio)
 * [Studio-Pack-Generator](https://github.com/jersou/studio-pack-generator)

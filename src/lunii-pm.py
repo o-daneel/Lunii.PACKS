@@ -4,7 +4,7 @@ from pkg.api.device import LuniiDevice, find_devices, is_device
 from pkg.api.stories import story_name
 
 
-CLI_VERSION = "2.0.0a"
+CLI_VERSION = "2.0.0"
 
 
 def exit_help():
