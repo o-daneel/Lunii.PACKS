@@ -9,6 +9,7 @@ This is a simple CLI application that allows basic operations like export/import
 
 ## TODO
 *(nothing)*
+* ~~update official db file, fetch db in homedir if not present + flag to refresh on demand~~
 * ~~update structure with v2 v3 support~~
 * ~~validate cipher / decipher on v2~~
 * ~~v3 specifics~~
@@ -16,24 +17,21 @@ This is a simple CLI application that allows basic operations like export/import
   * ~~validate keys~~
 * ~~validate cipher / decipher on v3~~
   * ~~import pycryptdome~~
-  
 * ~~update all exports to .mp3 .bmp .plain (v2 only) -> .plain.pk~~
 * ~~update import to support directory~~
-* update import to cipher
+* ~~update import to cipher~~
   * ~~v2 : with xxxtea~~
+  * ~~v3 : with aes using .md_bt~~
+  * ~~add support for .v2.pk~~
+  * ~~add support for prev .zip~~
+* ~~if v3 bin key file, allow~~
+  * ~~export for v3 (if keys available), as plain ?~~
+* ADD CHECK stories
+  * for v2, check bt, parse ri si, check all files present, check bmp size, check mp3 size
   * validate plain.pk before import
     * ri, si, li, ni present
     * check contents (rf sf files present)
     * check rf sf sizes ?
-  * ~~v3 : with aes using .md_bt~~
-  * ~~add support for .v2.pk~~
-  * ~~add support for prev .zip~~
-* if v3 bin key file, allow
-  * ~~export for v3 (if keys available), as plain ?~~
-  * check story
-* ADD CHECK stories
-  * for v2, check bt, parse ri si, check all files present, check bmp size, check mp3 size
-* update official db file, fetch db in homedir if not present + flag to refresh on demand
 
 
 ## Summary
@@ -68,7 +66,7 @@ This is a simple CLI application that allows basic operations like export/import
 ### App Version
 ````
 $ python .\src\lunii-pm.py --version
-Lunii Storyteller - Pack Manager (CLI), version 2.0.0
+Lunii Storyteller - Pack Manager (CLI), version 2.0.1
 ````
 
 ### Help
@@ -82,6 +80,7 @@ Options:
   -f, --find               Identifying all Lunii storytellers connected
   -d, --dev DIRECTORY      Specifies which drives letter to use for Lunii
                            Storyteller
+  -r, --refresh            Refresh official db from Lunii
   -i, --info               Prints informations about the storyteller
   -l, --list               List all stories available in Lunii Storyteller
   -k, --key FILE           Device Key file for Lunii v3

@@ -1,4 +1,3 @@
-import binascii
 import os
 
 def reverse_bytes(input_bytes):

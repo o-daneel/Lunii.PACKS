@@ -28,7 +28,7 @@ class LuniiDevice:
         # dummy values
         self.lunii_version = 0
         self.UUID = ""
-        self.dev_feyfile = keyfile
+        self.dev_keyfile = keyfile
         self.device_key = None
         self.device_iv = None
         self.story_key = None
@@ -91,7 +91,7 @@ class LuniiDevice:
         # forging keys based on md ciphered part
         self.load_fakestory_keys()
         # real keys if available
-        self.device_key, self.device_iv = fetch_keys(self.dev_feyfile)
+        self.device_key, self.device_iv = fetch_keys(self.dev_keyfile)
 
     def __v2_decipher(self, buffer, key, offset, dec_len):
         # checking offset

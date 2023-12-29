@@ -1,10 +1,10 @@
 import os
 import click
 from pkg.api.device import LuniiDevice, find_devices, is_device
-from pkg.api.stories import story_name
+from pkg.api.stories import story_load_db, story_name
 
 
-CLI_VERSION = "2.0.0"
+CLI_VERSION = "2.0.1"
 
 
 def exit_help():
@@ -17,13 +17,14 @@ def exit_help():
 @click.option('--verbose', '-v', "verbose", is_flag=True, help="Verbose mode")
 @click.option('--find', '-f', "find", is_flag=True, help="Identifying all Lunii storytellers connected")
 @click.option('--dev', '-d', "dev", type=click.Path(exists=True, file_okay=False, dir_okay=True), default=None, help="Specifies which drives letter to use for Lunii Storyteller")
+@click.option('--refresh', '-r', "refresh", is_flag=True, help="Refresh official db from Lunii")
 @click.option('--info', '-i', "info", is_flag=True, help="Prints informations about the storyteller")
 @click.option('--list', '-l', "slist", is_flag=True, help="List all stories available in Lunii Storyteller")
 @click.option('--key',  '-k', "key_v3", type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None, help="Device Key file for Lunii v3")
 @click.option('--pack-export', '-pe', "exp", type=str, default=None, help="Export selected story to an archive (or use ALL)")
 @click.option('--pack-import', '-pi', "imp", type=click.Path(exists=True, file_okay=True, dir_okay=True), default=None, help="Import a story archive in the Lunii")
 @click.option('--pack-remove', '-pr', "rem", type=str, default=None, help="Remove a story from the Lunii")
-def cli_main(verbose, find, dev, info, slist, key_v3, exp, imp, rem):
+def cli_main(verbose, find, dev, refresh, info, slist, key_v3, exp, imp, rem):
     valid_dev_list = find_devices()
 
     # at least one command is required
@@ -50,6 +51,9 @@ def cli_main(verbose, find, dev, info, slist, key_v3, exp, imp, rem):
 
     # using selected device
     my_dev = LuniiDevice(dev, key_v3)
+
+    # feeding official db (from cache or live)
+    story_load_db(refresh)
 
     if info:
         print(my_dev)
