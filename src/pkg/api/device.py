@@ -368,23 +368,43 @@ class LuniiDevice:
             archive_type = TYPE_ZIP
         elif story_path.lower().endswith(EXT_7z):
             archive_type = TYPE_7Z
-        else:
+
+
+        # supplementary verification for zip / 7z
+        if archive_type == TYPE_ZIP:
             # trying to figure out based on zip contents
             with zipfile.ZipFile(file=story_path) as zip_file:
                 # reading all available files
                 zip_contents = zip_file.namelist()
-
-                # based on bt file
-                bt_files = [entry for entry in zip_contents if entry.endswith("bt")]
-                if bt_files:
-                    bt_size = zip_file.getinfo(bt_files[0]).file_size
-                    if bt_size == 0x20:
-                        type = TYPE_V3
-                    else:
-                        type = TYPE_V2
+                # checking for STUdio format
+                if 'story.json' in zip_contents and  'assets' in zip_contents:
+                    archive_type = TYPE_STUDIO_ZIP
+                    if not any(one_file.lower()endswith(".mp3") for one_file in zip_contents):
+                        archive_type = TYPE_UNK
                 
-                # based on ri decipher with xxtea
-                        # type = TYPE_V2
+                # checking for pk version v2 / v3 ?
+                else:
+                    # based on bt file
+                    bt_files = [entry for entry in zip_contents if entry.endswith("bt")]
+                    if bt_files:
+                        bt_size = zip_file.getinfo(bt_files[0]).file_size
+                        if bt_size == 0x20:
+                            archive_type = TYPE_V3
+                        else:
+                            archive_type = TYPE_V2
+
+            #     # based on ri decipher with xxtea
+            #             # archive_type = TYPE_V2
+            pass
+        elif archive_type == TYPE_7Z:
+            # checking for STUdio format
+                # archive_type = TYPE_STUDIO_7Z
+            # checking for pk version v2 / v3 ?
+            #         if 
+            #             archive_type = TYPE_V3
+            #         else:
+            #             archive_type = TYPE_7Z
+            pass
 
         # processing story
         if archive_type == TYPE_PLAIN:
@@ -397,6 +417,10 @@ class LuniiDevice:
             return self.import_story_v2(story_path)
         elif archive_type == TYPE_V3:
             return self.import_story_v3(story_path)
+        elif archive_type == TYPE_STUDIO_ZIP:
+            return self.import_story_studio_zip(story_path)
+        # elif archive_type == TYPE_STUDIO_7Z:
+        #     return self.import_story_studio_7z(story_path)
 
     def import_story_plain(self, story_path):
         # checking if archive is OK
@@ -751,6 +775,27 @@ class LuniiDevice:
 
     def import_story_v3(self, story_path):
         print("   ERROR : unsupported story format")
+        return False
+
+    def import_story_studio_zip(self, story_path):
+        # checking if archive is OK
+        try:
+            with zipfile.ZipFile(file=story_path):
+                pass  # If opening succeeds, the archive is valid
+        except zipfile.BadZipFile as e:
+            print(f"   ERROR: {e}")
+            return False
+        
+        # creating authorization file : bt
+        print("   INFO : Authorization file creation...")
+        bt_path = output_path.joinpath("bt")
+        with open(bt_path, "wb") as fp_bt:
+            fp_bt.write(self.bt)
+
+        # updating .pi file to add new UUID
+        self.stories.append(new_uuid)
+        self.update_pack_index()
+
         return False
 
     def __story_check_key(self, story_path, key, iv):
