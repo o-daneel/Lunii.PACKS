@@ -66,7 +66,7 @@ This is a simple CLI application that allows basic operations like export/import
 ### App Version
 ````
 $ python .\src\lunii-pm.py --version
-Lunii Storyteller - Pack Manager (CLI), version 2.0.1
+Lunii Storyteller - Pack Manager (CLI), version 2.0.2
 ````
 
 ### Help

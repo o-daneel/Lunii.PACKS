@@ -1,7 +1,7 @@
 import unittest
 import hexdump
 
-from pkg.api.stories import *
+from pkg.api import stories
 from pkg.api.device import *
 from pkg.api.constants import lunii_generic_key
 
@@ -9,19 +9,22 @@ from pkg.api.constants import lunii_generic_key
 class testLunii_API(unittest.TestCase):
 
     def test_1_stories(self):
-        
+
         # getting name of all stories
         count = 0
-        for key in UUID_DB.keys():
-            if UUID_DB[key].get('title'):
+        stories.story_load_db()
+        local_DB = stories.UUID_DB
+        
+        for key in local_DB.keys():
+            if local_DB[key].get('title'):
                 count += 1
-                assert story_name(key) == UUID_DB[key].get('title')
+                assert story_name(key) == local_DB[key].get('title')
         print(count)
         assert count
 
         # unknown story
         unknown_uuid = UUID("00000000-0000-0000-0000-000000000000")
-        assert story_name(unknown_uuid) == STORY_UNKNOWN
+        assert story_name(unknown_uuid) == stories.STORY_UNKNOWN
 
     def test_2_story_feed(self):
         stories_list = feed_stories("./test/_v2/")

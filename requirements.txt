@@ -3,3 +3,4 @@ click
 tqdm
 py7zr
 pycryptodome
+requests

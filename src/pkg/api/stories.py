@@ -16,6 +16,8 @@ UUID_DB = {}
 
 def story_load_db(reload=False):
     global UUID_DB
+    retVal = True
+
     # fetching db if necessary
     if not os.path.isfile(OFFICIAL_DB) or reload:
         # creating dir if not there
@@ -24,24 +26,24 @@ def story_load_db(reload=False):
 
         try:
             # Set the timeout for the request
-            print("Feeding DB from Lunii server...")
-            response = requests.get(OFFICIAL_DB_URL, timeout=1)
+            response = requests.get(OFFICIAL_DB_URL, timeout=30)
             if response.status_code == 200:
                 # Load image from bytes
                 with open(OFFICIAL_DB, "wb") as fp:
                     fp.write(response.content)
 
         except requests.exceptions.Timeout:
-            pass
-        except requests.exceptions.RequestException as e:
-            pass
+            retVal = False
+        except requests.exceptions.RequestException:
+            retVal = False
 
     # trying to load DB
     if os.path.isfile(OFFICIAL_DB):
         with open(OFFICIAL_DB, encoding='utf-8') as fp_db:
             db_stories = json.load(fp_db).get('response')
-            UUID_DB = {db_stories[key]["uuid"].upper():value for (key, value) in db_stories.items()}
+            UUID_DB = {db_stories[key]["uuid"].upper(): value for (key, value) in db_stories.items()}
 
+    return retVal
 
 def story_load_pict(story_uuid: UUID, reload=False):
     image_data = None
@@ -54,12 +56,7 @@ def story_load_pict(story_uuid: UUID, reload=False):
     one_uuid = str(story_uuid).upper()
     res_file = os.path.join(CACHE_DIR, one_uuid)
 
-    if os.path.isfile(res_file):
-        # print(f"in cache {res_file}")
-        # returning file content
-        with open(res_file, "rb") as fp:
-            image_data = fp.read()
-    else:
+    if reload or not os.path.isfile(res_file):
         # downloading the image to a file
         one_story_imageURL = story_pict_URL(story_uuid)
         # print(f"Downloading for {one_uuid} to {res_file}")
@@ -75,8 +72,15 @@ def story_load_pict(story_uuid: UUID, reload=False):
                 pass
         except requests.exceptions.Timeout:
             pass
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.RequestException:
             pass
+
+    if not image_data and os.path.isfile(res_file):
+        # print(f"in cache {res_file}")
+        # returning file content
+        with open(res_file, "rb") as fp:
+            image_data = fp.read()
+
     return image_data
 
 
@@ -95,7 +99,7 @@ def story_desc(story_uuid: UUID):
     one_uuid = str(story_uuid).upper()
     if one_uuid in UUID_DB:
         locale = list(UUID_DB[one_uuid]["locales_available"].keys())[0]
-        desc :str = UUID_DB[one_uuid]["localized_infos"][locale].get("description")
+        desc: str = UUID_DB[one_uuid]["localized_infos"][locale].get("description")
         if desc.startswith("<link href"):
             pos = desc.find(">")
             desc = desc[pos+1:]
@@ -144,5 +148,3 @@ class StoryList(list):
             if str(uuid).upper().endswith(short_uuid):
                 return story_name(uuid)
         return None
-
-
