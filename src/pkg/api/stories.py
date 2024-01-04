@@ -2,6 +2,7 @@ import json
 import os
 import pathlib
 from pathlib import Path
+from typing import List
 from uuid import UUID
 
 import requests
@@ -13,6 +14,38 @@ DESC_NOT_FOUND = "No description found."
 
 # https://server-data-prod.lunii.com/v2/packs
 UUID_DB = {}
+
+
+class StoryNode:
+    def __init__(self):
+        self.ri = 0
+        self.si = 0
+        self.next_node = 0
+        self.next_node = 0
+
+class Story:
+
+    def __init__(self, story_json=None):
+        self.node_version = 1
+        self.pack_version = 0
+        self.factory_pack = 1
+
+        self.nodes: List(StoryNode) = list()
+        self.ri = {}
+        self.si = {}
+
+        if story_json:
+            self.load(story_json)
+
+    def load(story_json):
+        pass
+
+    def write_ni(self, path_ni):
+        pass
+    def write_ri(self, path_ri):
+        pass
+    def write_si(self, path_si):
+        pass
 
 
 def story_load_db(reload=False):
