@@ -17,34 +17,66 @@ UUID_DB = {}
 
 
 class StoryNode:
-    def __init__(self):
-        self.ri = 0
-        self.si = 0
-        self.next_node = 0
+    def __init__(self, uuid: UUID, idx_image, idx_audio):
+        self.uuid = uuid
+        self.ri = idx_image
+        self.si = idx_audio
         self.next_node = 0
 
 class Story:
-
     def __init__(self, story_json=None):
-        self.node_version = 1
+        self.node_version = 0
         self.pack_version = 0
+        self.title = ""
+        self.description = ""
         self.factory_pack = 1
+        self.uuid = None
 
         self.nodes: List(StoryNode) = list()
-        self.ri = {}
-        self.si = {}
+        self.ri = list()
+        self.si = list()
 
         if story_json:
             self.load(story_json)
 
-    def load(story_json):
-        pass
+    def load(self, story_json):
+        self.node_version = story_json.get('format')
+        self.pack_version = story_json.get('version')
+        self.title = story_json.get('title')
+        self.description = story_json.get('description')
 
-    def write_ni(self, path_ni):
-        pass
+        # looping stage nodes
+        snodes = story_json.get('stageNodes')
+        for node in snodes:
+            n_uuid = UUID(node.get('uuid'))
+            if not self.uuid:
+                self.uuid = n_uuid
+
+            image = node.get('image')
+            if image not in self.ri:
+                self.ri.append(image)
+            idx_image = self.ri.index(image)
+
+            audio = node.get('audio')
+            if audio not in self.si:
+                self.si.append(audio)
+            idx_audio = self.si.index(audio)
+
+            self.nodes.append(StoryNode(n_uuid, idx_image, idx_audio))
+
+        # looping action nodes
+        # anodes = story_json.get('actionNodes')
+
+
     def write_ri(self, path_ri):
         pass
     def write_si(self, path_si):
+        pass
+    def write_ni(self, path_ni):
+        pass
+    def write_li(self, path_ni):
+        pass
+    def write_bt(self, path_ni):
         pass
 
 

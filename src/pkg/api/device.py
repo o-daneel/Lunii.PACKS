@@ -1,4 +1,5 @@
 import glob
+import json
 import os.path
 import platform
 import shutil
@@ -17,7 +18,7 @@ from tqdm import tqdm
 
 from pkg.api.aes_keys import fetch_keys, reverse_bytes
 from pkg.api.constants import *
-from pkg.api.stories import StoryList, story_name
+from pkg.api.stories import Story, StoryList, story_name
 
 
 class LuniiDevice:
@@ -316,16 +317,20 @@ class LuniiDevice:
 
         return data
 
-    def __get_ciphered_name(self, file):
+    def __get_ciphered_name(self, file: str, studio=False):
         file = file.removesuffix('.plain')
-        file = file.removesuffix('.mp3')
-        file = file.removesuffix('.bmp')
+
+        if studio and file.lower().endswith('.bmp'):
+            file = f"rf/000/{file}"
+            file = file.lower().removesuffix('.bmp')
+        if studio and file.lower().endswith('.mp3'):
+            file = f"sf/000/{file}"
+            file = file.lower().removesuffix('.mp3')
 
         # upcasing filename
         bn = os.path.basename(file)
         if len(bn) >= 8:
             file = os.path.join(os.path.dirname(file), bn.upper())
-
         # upcasing uuid dir if present
         dn = os.path.dirname(file)
         if len(dn) >= 8:
@@ -377,9 +382,13 @@ class LuniiDevice:
                 # reading all available files
                 zip_contents = zip_file.namelist()
                 # checking for STUdio format
-                if 'story.json' in zip_contents and  'assets' in zip_contents:
+                if 'story.json' in zip_contents and  'assets/' in zip_contents:
                     archive_type = TYPE_STUDIO_ZIP
-                    if not any(one_file.lower()endswith(".mp3") for one_file in zip_contents):
+                    if not any(one_file.lower().endswith(".mp3") for one_file in zip_contents):
+                        print("   ERROR: STUdio story with wrong song format (not MP3)")
+                        archive_type = TYPE_UNK
+                    if not any(one_file.lower().endswith(".bmp") for one_file in zip_contents):
+                        print("   ERROR: STUdio story with wrong image format (not BMP)")
                         archive_type = TYPE_UNK
                 
                 # checking for pk version v2 / v3 ?
@@ -786,15 +795,83 @@ class LuniiDevice:
             print(f"   ERROR: {e}")
             return False
         
-        # creating authorization file : bt
-        print("   INFO : Authorization file creation...")
-        bt_path = output_path.joinpath("bt")
-        with open(bt_path, "wb") as fp_bt:
-            fp_bt.write(self.bt)
+                # opening zip file
+        with zipfile.ZipFile(file=story_path) as zip_file:
+            # reading all available files
+            zip_contents = zip_file.namelist()
+            if "uuid.bin" in zip_contents:
+                print("   ERROR: plain.pk format detected ! Unable to add this story.")
+                return False
+            if "story.json" not in zip_contents:
+                print("   ERROR: missing 'story.json'. Unable to add this story.")
+                return False
 
-        # updating .pi file to add new UUID
-        self.stories.append(new_uuid)
-        self.update_pack_index()
+            # getting UUID file
+            try:
+                story_json=json.loads(zip_file.read("story.json"))
+            except ValueError as e:
+                print(f"   ERROR: {e}")
+                return False
+
+            one_story = Story(story_json)
+
+            # checking if UUID already loaded
+            if str(one_story.uuid) in self.stories:
+                print(f"   WARN: '{story_name(one_story.uuid)}' is already loaded, aborting !")
+                return False
+
+            # decompressing story contents
+            output_path = Path(self.mount_point).joinpath(f".content/{one_story.uuid.hex[24:].upper()}")
+            if not output_path.exists():
+                output_path.mkdir(parents=True)
+
+            # Loop over each file
+            count = 0
+            pbar = tqdm(iterable=zip_contents, total=len(zip_contents), bar_format=TQDM_BAR_FORMAT)
+            for file in pbar:
+                count += 1
+                pbar.set_description(f"Processing {file}")
+                if zip_file.getinfo(file).is_dir():
+                    continue
+                if file.endswith("story.json"):
+                    continue
+                if not file.startswith("assets"):
+                    continue
+
+                # Extract each zip file
+                data = zip_file.read(file)
+
+                # stripping extra "assets/lower_uuid_part" chars
+                file = file[7 + 32:]
+
+                # updating filename, and ciphering header if necessary
+                data_ciphered = self.__get_ciphered_data(file, data)
+                file_newname = self.__get_ciphered_name(file, True)
+                target: Path = output_path.joinpath(file_newname)
+
+                # create target directory
+                if not target.parent.exists():
+                    target.parent.mkdir(parents=True)
+                # write target file
+                with open(target, "wb") as f_dst:
+                    f_dst.write(data_ciphered)
+
+        # # creating lunii index files : ri, si, ni, li
+        # one_story.write_ri(output_path)
+        # one_story.write_si(output_path)
+        # one_story.write_ni(output_path)
+        # one_story.write_li(output_path)
+
+        # # creating authorization file : bt
+        # print("   INFO : Authorization file creation...")
+        # one_story.write_bt(output_path)
+        # bt_path = output_path.joinpath("bt")
+        # with open(bt_path, "wb") as fp_bt:
+        #     fp_bt.write(self.bt)
+
+        # # updating .pi file to add new UUID
+        # self.stories.append(new_uuid)
+        # self.update_pack_index()
 
         return False
 
