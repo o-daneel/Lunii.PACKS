@@ -125,20 +125,19 @@ def story_pict_URL(story_uuid: UUID):
 
 
 def _uuid_match(uuid: UUID, key_part: str):
-    uuid = str(uuid).upper()
-    uuid = uuid.replace("-", "")
+    uuid_hex = uuid.hex
 
-    key_part = key_part.upper()
+    key_part = key_part.lower()
     key_part = key_part.replace("-", "")
 
-    return key_part in uuid
+    return key_part in uuid_hex
 
 
 class StoryList(list):
     def __init__(self):
         super().__init__()
 
-    def __contains__(self, key_part):
+    def __contains__(self, key_part: str):
         for uuid in self:
             if _uuid_match(uuid, key_part):
                 return True
