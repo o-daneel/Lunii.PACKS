@@ -21,9 +21,9 @@ def exit_help():
 @click.option('--refresh', '-r', "refresh", is_flag=True, help="Refresh official db from Lunii")
 @click.option('--info', '-i', "info", is_flag=True, help="Prints informations about the storyteller")
 @click.option('--list', '-l', "slist", is_flag=True, help="List all stories available in Lunii Storyteller")
-@click.option('--key',  '-k', "key_v3", type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None, help="Device Key file for Lunii v3")
+@click.option('--key',  '-k', "key_v3", type=click.Path(exists=False, file_okay=True, dir_okay=False), default=V3_KEYS, help="Device Key file for Lunii v3")
 @click.option('--pack-export', '-pe', "exp", type=str, default=None, help="Export selected story to an archive (or use ALL)")
-@click.option('--pack-import', '-pi', "imp", type=click.Path(exists=True, file_okay=True, dir_okay=True), default=V3_KEYS, help="Import a story archive in the Lunii")
+@click.option('--pack-import', '-pi', "imp", type=click.Path(exists=True, file_okay=True, dir_okay=True), default=None, help="Import a story archive in the Lunii")
 @click.option('--pack-remove', '-pr', "rem", type=str, default=None, help="Remove a story from the Lunii")
 def cli_main(verbose, find, dev, refresh, info, slist, key_v3, exp, imp, rem):
     valid_dev_list = find_devices()
