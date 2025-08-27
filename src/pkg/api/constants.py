@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 
 # this logger MUST not be used from worker thread.
-LUNII_LOGGER = "lunii-cli"
+LUNII_LOGGER = "lunii-packs"
 REFRESH_CACHE = False
 
 STORY_TRANSCODING_SUPPORTED = shutil.which("ffmpeg") is not None
