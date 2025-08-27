@@ -1,6 +1,10 @@
-xxtea
 click
 tqdm
-py7zr
-pycryptodome
-requests
+psutil~=5.9.7
+py7zr==0.22.0
+xxtea~=3.2.0
+requests~=2.31.0
+pycryptodome==3.20.0
+pillow~=10.2.0
+mutagen~=1.47.0
+ffmpeg-python
