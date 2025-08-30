@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Let the possibility for the user to call this script from outside the development repo
+# (environment variable "LUNII_REPO_PATH" must be correctly set in that case)
+if [ "$LUNII_REPO_PATH" == "" ]; then
+  LUNII_REPO_PATH="."
+fi
+
+# Activate virtual environment
+source "$LUNII_REPO_PATH/venv/bin/activate"
+
+# Run the command with the given arguments
+python3 "$LUNII_REPO_PATH/src/lunii-pm.py" "$@"
+
+# Deactivate virtual environment
+deactivate
