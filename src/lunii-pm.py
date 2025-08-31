@@ -10,7 +10,7 @@ from pkg.api.devices import find_devices
 from pkg.api.stories import story_load_db
 
 
-CLI_VERSION = "2.0.3"
+CLI_VERSION = "2.1.0"
 
 
 def exit_help():
