@@ -43,6 +43,7 @@ This is a simple CLI application that allows basic operations like export/import
     - [Help](#help)
   - [HowTo](#howto)
     - [Prepare env](#prepare-env)
+    - [Install linux bash wrapper](#install-linux-bash-wrapper)
     - [Build CLI executable](#build-cli-executable)
   - [Formats supported](#formats-supported)
     - [.plain.pk](#plainpk)
@@ -117,7 +118,28 @@ $ pyinstaller lunii-pm.spec
 $ dist\lunii-pm.exe
 ```
 
-## Formats supported
+### Install linux bash wrapper
+
+A bash wrapper for Linux systems exists in this `Lunii.Packs` repository. It is located at the root of this project and is named `lunii-packs`.
+This wrapper takes care of the activation and deactivation of the virtual environment, but you have to have followed the previous `Prepare env` paragraph.
+
+You can either directly use it from the command line in this directory:
+
+```bash
+$ cd Lunii.PACKS/
+$ lunii-packs --version
+Lunii Storyteller - Pack Manager (CLI), version 2.1.0
+``` 
+
+Or, you can add the following alias in your `.bashrc` file if tou want to use it from anywhere:
+
+```bash
+# Custom aliases to run lunii-packs
+alias lunii-packs='LUNII_REPO_PATH=/home/my-user/development/Lunii.PACKS /home/my-user/development/Lunii.PACKS/lunii-packs'
+```
+
+## Supported archive formats (Lunii)
+**NOTE :** Flam stories are not yet supported
 ### .plain.pk
 **Filename** :  `story_name.8B_UUID.plain.pk`  
 **Ciphering** : None / Plain  
@@ -145,7 +167,7 @@ $ dist\lunii-pm.exe
       00000000000000000000000000000000/si
       00000000000000000000000000000000/rf/000/XXYYXXYY
       00000000000000000000000000000000/sf/000/XXYYXXYY
-### zip
+### ZIP (old Lunii.QT)
 **Filename** :  `8B_UUID - story_name.zip`  
 **Ciphering** : Generic Key  
 **Structure** :  
@@ -157,6 +179,19 @@ $ dist\lunii-pm.exe
       si
       rf/000/XXYYXXYY
       sf/000/XXYYXXYY
+
+### ZIP (alternate)
+**Filename** :  `AGE+] story_title DASHED_UUID.zip`  
+**Ciphering** : Generic Key  
+**Structure** : (same as [.v1.pk / .v2.pk](#v1pk--v2pk))
+
+      00000000-0000-0000-0000-000000000000/ni
+      00000000-0000-0000-0000-000000000000/li
+      00000000-0000-0000-0000-000000000000/ri
+      00000000-0000-0000-0000-000000000000/si
+      00000000-0000-0000-0000-000000000000/rf/000/XXYYXXYY
+      00000000-0000-0000-0000-000000000000/sf/000/XXYYXXYY
+
 ### 7z
 **Filename** : `AGE+] story_title DASHED_UUID.7z`  
 **Ciphering** : Generic Key  
@@ -168,6 +203,17 @@ $ dist\lunii-pm.exe
       00000000-0000-0000-0000-000000000000/si
       00000000-0000-0000-0000-000000000000/rf/000/XXYYXXYY
       00000000-0000-0000-0000-000000000000/sf/000/XXYYXXYY
+
+### STUdio (ZIP / 7z)
+**Filename** : `AGE+] story_title DASHED_UUID.zip .7z`  
+**Ciphering** : None  
+
+**Structure** :  
+
+        assets/
+        stroy.json
+        thumbnail.png
+
 ## Examples
 
 ### Finding my Storyteller

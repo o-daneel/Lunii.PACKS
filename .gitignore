@@ -4,3 +4,4 @@ test/
 build/
 dist/
 packs/
+venv/

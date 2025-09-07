@@ -1,11 +1,16 @@
 import os
 import click
-from pkg.api.constants import V3_KEYS
-from pkg.api.device import LuniiDevice, find_devices, is_device
-from pkg.api.stories import story_load_db, story_name
+import logging
+
+from lunii_logging import initialize_logger
+from pkg.api.constants import V3_KEYS, LUNII_LOGGER
+from pkg.api.device_lunii import LuniiDevice, is_lunii
+from pkg.api.device_flam import FlamDevice, is_flam
+from pkg.api.devices import find_devices
+from pkg.api.stories import story_load_db
 
 
-CLI_VERSION = "2.0.3"
+CLI_VERSION = "2.1.0"
 
 
 def exit_help():
@@ -26,6 +31,13 @@ def exit_help():
 @click.option('--pack-import', '-pi', "imp", type=click.Path(exists=True, file_okay=True, dir_okay=True), default=None, help="Import a story archive in the Lunii")
 @click.option('--pack-remove', '-pr', "rem", type=str, default=None, help="Remove a story from the Lunii")
 def cli_main(verbose, find, dev, refresh, info, slist, key_v3, exp, imp, rem):
+    
+    # Initialize logger
+    initialize_logger(logging.INFO)
+
+    # Get main logger
+    main_logger = logging.getLogger(LUNII_LOGGER)
+
     valid_dev_list = find_devices()
 
     # at least one command is required
@@ -34,11 +46,18 @@ def cli_main(verbose, find, dev, refresh, info, slist, key_v3, exp, imp, rem):
 
     # finding connected devices
     if find:
-        print(f"Found {len(valid_dev_list)} connected device(s)")
+        main_logger.log(logging.INFO, f"Found {len(valid_dev_list)} connected device(s)")
 
         for dev in valid_dev_list:
-            one_dev = LuniiDevice(dev, key_v3)
-            print(f"  \"{one_dev.mount_point}\" - {len(one_dev.stories)} stories")
+            if is_lunii(dev):
+                one_dev = LuniiDevice(dev, key_v3)
+            elif is_flam(dev):
+                one_dev = FlamDevice(dev)
+            else:
+                main_logger.log(logging.ERROR, f"This device is not supported: '{dev}'")
+                return
+            
+            main_logger.log(logging.INFO, f"\"{one_dev.mount_point}\" - {len(one_dev.stories)} stories")
         return
 
     # selecting default lunii dev
@@ -46,12 +65,21 @@ def cli_main(verbose, find, dev, refresh, info, slist, key_v3, exp, imp, rem):
         click.echo(f"INFO : using Lunii device on {valid_dev_list[0]}")
         dev = valid_dev_list[0]
 
-    if not dev or not is_device(dev):
-        click.echo("ERROR : no Lunii device connected !")
+    if not dev or (not is_lunii(dev) and not is_flam(dev)):
+        click.echo("ERROR : no supported device connected !")
         return
+    
+    device_type = "LUNII"
 
     # using selected device
-    my_dev = LuniiDevice(dev, key_v3)
+    if is_lunii(dev):
+        my_dev = LuniiDevice(dev, key_v3)
+    elif is_flam(dev):
+        my_dev = FlamDevice(dev)
+        device_type = "FLAM"
+    else: 
+        main_logger.log(logging.ERROR, f"This device is not supported: '{dev}'")
+        return
 
     # feeding official db (from cache or live)
     story_load_db(refresh)
@@ -65,15 +93,19 @@ def cli_main(verbose, find, dev, refresh, info, slist, key_v3, exp, imp, rem):
             print("{:36} | {:<60} | {:6}".format("UUID", "Name", "Source"))
             print("{} | {:<60} | {:6}".format("-"*36, "-"*60, "-"*6 ))
             for story in my_dev.stories:
-                print("{} | {:<60} | {:6}".format(str(story).upper(), story_name(story), " "))
+                print("{} | {:<60} | {:6}".format(story.str_uuid, story.name, " "))
         else:
             for story in my_dev.stories:
-                print(f"> {str(story).upper()[28:]} - {story_name(story)}")
+                print(f"> {story.short_uuid} - {story.name}")
     elif exp:
         zip_list = []
         if exp.upper() == "ALL":
-            # full export
-            zip_list = my_dev.export_all("./")
+            if device_type == "LUNII":
+                # full export
+                zip_list = my_dev.export_all("./")
+            else:
+                main_logger.log(logging.ERROR, f"The '{device_type}' device does not support the 'export all' feature")
+                return
         else:
             # single to export
             one_zip = my_dev.export_story(exp, "./")
@@ -91,9 +123,13 @@ def cli_main(verbose, find, dev, refresh, info, slist, key_v3, exp, imp, rem):
         if os.path.isfile(imp):
             # single story to import
             res = my_dev.import_story(imp)
-        else:
+        elif device_type == "LUNII":
             # directory to import
             res = my_dev.import_dir(imp)
+        else:
+            main_logger.log(logging.ERROR, f"The '{device_type}' device does not support the 'import directory' feature")
+            return
+        
         if not res:
             click.echo("ERROR: Failed to import")
         else:
