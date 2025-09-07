@@ -39,7 +39,7 @@ class StudioStory:
         self.js_anodes = None
         self.ri = dict()
         self.si = dict()
-        self.li = list()
+        self.li: List[int] = list()
 
         # depends on ffmpeg presence on host system
         self.compatible = False
@@ -197,7 +197,12 @@ class StudioStory:
 
         # parsing list node index
         for index in self.li:
-            li_buffer += index.to_bytes(4, byteorder='little')
+            # Write index as signed 4-byte integer (little endian)
+            li_buffer += index.to_bytes(4, byteorder='little', signed=True)
+
+        # adding extra padding for small stories
+        while len(li_buffer) < 8:
+            li_buffer += b"\x00"
 
         return li_buffer
 

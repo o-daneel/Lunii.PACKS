@@ -3,14 +3,14 @@ import click
 import logging
 
 from lunii_logging import initialize_logger
-from pkg.api.constants import V3_KEYS, LUNII_LOGGER
+from pkg.api.constants import LUNII_V3, V3_KEYS, LUNII_LOGGER
 from pkg.api.device_lunii import LuniiDevice, is_lunii
 from pkg.api.device_flam import FlamDevice, is_flam
 from pkg.api.devices import find_devices
 from pkg.api.stories import story_load_db
 
 
-CLI_VERSION = "2.1.0"
+CLI_VERSION = "2.1.1"
 
 
 def exit_help():
@@ -120,6 +120,11 @@ def cli_main(verbose, find, dev, refresh, info, slist, key_v3, exp, imp, rem):
             click.echo("   ERROR: Failed to export")
         return
     elif imp:
+        # checking for v3 without key
+        if is_lunii(dev) and my_dev.device_version == LUNII_V3 and not my_dev.story_key:
+            main_logger.log(logging.ERROR, "🛑 Lunii v3 device (fw 3.2.2+) without story keys")
+            return
+
         if os.path.isfile(imp):
             # single story to import
             res = my_dev.import_story(imp)
